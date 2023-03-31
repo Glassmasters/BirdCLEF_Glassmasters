@@ -1,1 +1,0 @@
-# BirdCLEF_Glassmasters
