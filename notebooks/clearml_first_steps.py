@@ -7,7 +7,7 @@ except ImportError:
 
 from clearml import Task
 
-task = Task.init(project_name='', task_name='New experiment')
+task = Task.init(project_name='BirdCLEF_Glassmasters', task_name='Flippchen Test')
 
 params_dictionary = {'test_param': 123, 'score': -1}
 
