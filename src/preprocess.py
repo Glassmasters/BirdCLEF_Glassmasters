@@ -48,7 +48,7 @@ def preprocess_audio(file_path):
     mel_spectrogram = get_mel_spectrogram(waveform)
 
     # Apply augmentations
-    #mel_spectrogram = apply_augmentations(mel_spectrogram)
+    mel_spectrogram = apply_augmentations(mel_spectrogram)
 
     return mel_spectrogram
 
