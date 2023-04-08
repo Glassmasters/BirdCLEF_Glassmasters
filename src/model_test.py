@@ -7,6 +7,7 @@ from preprocess import preprocess_audio
 from torch.utils.data import random_split
 from torch.utils.data import DataLoader
 import torch.optim as optim
+import numpy as np
 
 
 def load_metadata(file_path):
@@ -71,26 +72,42 @@ class CustomCNN(nn.Module):
 
 
 class BirdDataset(Dataset):
-    def __init__(self, metadata_df, transform=None):
+    def __init__(self, metadata_df, transform=None, fixed_length=300):
         self.metadata_df = metadata_df
         self.transform = transform
+        self.fixed_length = fixed_length
+        self.base_file_path = DATASET_BASE_FILE_PATH + TRAIN_SET_FILE_DIR
 
     def __len__(self):
         return len(self.metadata_df)
 
     def __getitem__(self, idx):
         row = self.metadata_df.iloc[idx]
-        file_path = row['file_path']
+        file_path = row['filename']
         primary_label = row['primary_label']
 
         # Load and preprocess the audio
-        audio_data, _ = librosa.load(file_path, sr=32000)
-        mel_spectrogram = preprocess_audio(audio_data)
+        full_file_path = self.base_file_path + "\\" + file_path
+        mel_spectrogram = preprocess_audio(full_file_path)
+        mel_spectrogram = torch.unsqueeze(torch.tensor(mel_spectrogram), 0)
+        # Pad or truncate the mel spectrogram to a fixed length
+        mel_spectrogram = self.pad_or_truncate(mel_spectrogram, self.fixed_length)
 
         if self.transform:
             mel_spectrogram = self.transform(mel_spectrogram)
 
         return mel_spectrogram, primary_label
+
+    def pad_or_truncate(self, mel_spectrogram, length):
+        mel_spectrogram = torch.squeeze(mel_spectrogram)
+        if mel_spectrogram.shape[1] < length:
+            padding = length - mel_spectrogram.shape[1]
+            mel_spectrogram = torch.nn.functional.pad(mel_spectrogram, (0, padding), 'constant', 0)
+        else:
+            mel_spectrogram = mel_spectrogram[:, :length]
+
+        mel_spectrogram = torch.unsqueeze(mel_spectrogram, 0)
+        return mel_spectrogram
 
 
 # Real programming starts here
@@ -115,7 +132,8 @@ batch_size = 16
 train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
 val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+#device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+device = torch.device("cpu")
 model = CustomCNN(num_classes).to(device)
 criterion = nn.BCELoss()
 optimizer = optim.Adam(model.parameters(), lr=0.001)
@@ -143,3 +161,7 @@ for epoch in range(num_epochs):
 
     avg_val_loss = total_loss / len(val_loader)
     print(f"Epoch: {epoch + 1}, Validation Loss: {avg_val_loss:.4f}")
+
+# TODO: Different augmentation techniques
+# TODO: Other Model?
+# TODO: DIfferent method to handle inblaslance audio length
