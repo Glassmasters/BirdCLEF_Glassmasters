@@ -69,16 +69,14 @@ def plot_mel_spectrogram(mel_spectrogram, title='Mel Spectrogram', cmap='viridis
     plt.show()
 
 
-folder_path = os.path.join(DATASET_BASE_FILE_PATH +TRAIN_SET_FILE_DIR+ r"\abethr1")
+if __name__ == '__main__':
+    folder_path = os.path.join(DATASET_BASE_FILE_PATH + TRAIN_SET_FILE_DIR + r"\abethr1")
 
-for file in os.listdir(folder_path):
-    file_path = os.path.join(folder_path, file)
+    for file in os.listdir(folder_path):
+        file_path = os.path.join(folder_path, file)
 
-    # Preprocess the audio file
-    mel_spectrogram = preprocess_audio(file_path)
+        # Preprocess the audio file
+        mel_spectrogram = preprocess_audio(file_path)
 
-    # Plot the mel spectrogram
-    plot_mel_spectrogram(mel_spectrogram, cmap='viridis', dynamic_range=80)
-
-
-
+        # Plot the mel spectrogram
+        plot_mel_spectrogram(mel_spectrogram, cmap='viridis', dynamic_range=80)
