@@ -8,6 +8,9 @@ from torch.utils.data import random_split
 from torch.utils.data import DataLoader
 import torch.optim as optim
 import numpy as np
+import warnings
+
+warnings.filterwarnings("ignore")
 
 
 def load_metadata(file_path):
@@ -77,6 +80,7 @@ class BirdDataset(Dataset):
         self.transform = transform
         self.fixed_length = fixed_length
         self.base_file_path = DATASET_BASE_FILE_PATH + TRAIN_SET_FILE_DIR
+        self.label_to_index = {label: index for index, label in enumerate(sorted(self.metadata_df['primary_label'].unique()))}
 
     def __len__(self):
         return len(self.metadata_df)
@@ -89,14 +93,15 @@ class BirdDataset(Dataset):
         # Load and preprocess the audio
         full_file_path = self.base_file_path + "\\" + file_path
         mel_spectrogram = preprocess_audio(full_file_path)
-        mel_spectrogram = torch.unsqueeze(torch.tensor(mel_spectrogram), 0)
+        #mel_spectrogram = torch.unsqueeze(torch.tensor(mel_spectrogram), 0)
         # Pad or truncate the mel spectrogram to a fixed length
         mel_spectrogram = self.pad_or_truncate(mel_spectrogram, self.fixed_length)
 
         if self.transform:
             mel_spectrogram = self.transform(mel_spectrogram)
 
-        return mel_spectrogram, primary_label
+        one_hot_label = self.label_to_onehot(primary_label, num_classes)
+        return mel_spectrogram, one_hot_label
 
     def pad_or_truncate(self, mel_spectrogram, length):
         mel_spectrogram = torch.squeeze(mel_spectrogram)
@@ -109,6 +114,12 @@ class BirdDataset(Dataset):
         mel_spectrogram = torch.unsqueeze(mel_spectrogram, 0)
         return mel_spectrogram
 
+    def label_to_onehot(self, label, num_classes):
+        one_hot = torch.zeros(num_classes)
+        index = self.label_to_index[label]
+        one_hot[index] = 1
+        return one_hot
+
 
 # Real programming starts here
 
@@ -116,8 +127,7 @@ DATASET_BASE_FILE_PATH = r"D:\kaggle_competition\birdclef-2023"
 TRAIN_SET_FILE_DIR = r"\train_audio"
 
 # Load the metadata file
-metadata_df, num_classes = load_metadata(DATASET_BASE_FILE_PATH + r"\train_metadata.csv")
-
+metadata_df, num_classes = load_metadata(r"train_metadata_subset.csv")
 
 bird_dataset = BirdDataset(metadata_df)
 
@@ -132,12 +142,19 @@ batch_size = 16
 train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
 val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
 
-#device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-device = torch.device("cpu")
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+print("Running on device: {}".format(device))
 model = CustomCNN(num_classes).to(device)
+
+def init_weights(m):
+    if type(m) == nn.Linear:
+        nn.init.xavier_uniform_(m.weight)
+        m.bias.data.fill_(0.01)
+
+#model.apply(init_weights) #TODO: Check if this is needed
+
 criterion = nn.BCELoss()
 optimizer = optim.Adam(model.parameters(), lr=0.001)
-
 num_epochs = 10
 for epoch in range(num_epochs):
     model.train()
@@ -162,6 +179,10 @@ for epoch in range(num_epochs):
     avg_val_loss = total_loss / len(val_loader)
     print(f"Epoch: {epoch + 1}, Validation Loss: {avg_val_loss:.4f}")
 
+# TODO: Fix the bug in the dataset class/Dimenson mismatch??
+
+# TODO: Different optimizer and loss function
 # TODO: Different augmentation techniques
 # TODO: Other Model?
 # TODO: DIfferent method to handle inblaslance audio length
+
