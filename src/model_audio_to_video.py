@@ -3,7 +3,7 @@ import torch.nn as nn
 import pandas as pd
 from torch.utils.data import Dataset
 import librosa
-from preprocess import preprocess_audio
+from preprocess.adio_to_image.preprocess import preprocess_audio
 from torch.utils.data import random_split
 from torch.utils.data import DataLoader
 import torch.optim as optim
