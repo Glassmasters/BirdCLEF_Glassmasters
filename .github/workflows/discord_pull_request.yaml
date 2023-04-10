@@ -1,0 +1,39 @@
+name: Discord Notification on PR
+
+on:
+  pull_request:
+    types:
+      - opened
+
+jobs:
+  notify_discord:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Discord notification
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        run: |
+          curl -H "Content-Type: application/json" \
+            -X POST \
+            -d '{
+              "username": "GitHub",
+              "content": "A new pull request has been created: **${{ github.event.pull_request.title }}**",
+              "embeds": [
+                {
+                  "title": "Click here to view the pull request",
+                  "url": "${{ github.event.pull_request.html_url }}",
+                  "color": 16711680,
+                  "fields": [
+                    {
+                      "name": "Description",
+                      "value": "${{ github.event.pull_request.body }}"
+                    },
+                    {
+                      "name": "Created by",
+                      "value": "${{ github.event.pull_request.user.login }}"
+                    }
+                  ]
+                }
+              ]
+            }' \
+            $DISCORD_WEBHOOK
