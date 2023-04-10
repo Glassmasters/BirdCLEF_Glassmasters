@@ -4,7 +4,7 @@ from audiomentations import Compose, AddGaussianNoise, TimeStretch, PitchShift, 
 import librosa
 import numpy as np
 
-# from src.plotting.plot_audio_wav_augmentation import plot_waveforms
+from src.plotting.plot_audio_wav_augmentation import plot_waveforms
 
 
 DATASET_BASE_FILE_PATH = r"D:\Datasets\birdclef-2023"
@@ -39,4 +39,4 @@ if __name__ == '__main__':
         waveform = load_waveform(file_path)
         augmented_waveforms = apply_augmentation(waveform)
 
-        # plot_waveforms(waveform, augmented_waveforms)
+        plot_waveforms(waveform, augmented_waveforms)
