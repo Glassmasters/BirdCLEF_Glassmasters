@@ -1,12 +1,11 @@
 import os
 import random
 
-import librosa
-import numpy as np
+from src.plotting.plot_mel_spectogram import plot_mel_spectrogram
 import torchaudio
 import torch
 import torchvision.transforms as transforms
-import matplotlib.pyplot as plt
+
 
 DATASET_BASE_FILE_PATH = r"D:\kaggle_competition\birdclef-2023"
 TRAIN_SET_FILE_DIR = r"\train_audio"
@@ -53,20 +52,7 @@ def preprocess_audio(file_path):
     return mel_spectrogram
 
 
-def plot_mel_spectrogram(mel_spectrogram, title='Mel Spectrogram', cmap='viridis', dynamic_range=80):
-    mel_spectrogram_np = mel_spectrogram.squeeze().detach().numpy()
 
-    # Convert to dB scale for better visualization
-    mel_spectrogram_db = librosa.amplitude_to_db(mel_spectrogram_np, ref=np.max)
-
-    plt.figure(figsize=(10, 4))
-    plt.imshow(mel_spectrogram_db, origin='lower', aspect='auto', cmap=cmap, vmin=-dynamic_range)
-    plt.title(title)
-    plt.colorbar(format='%+2.0f dB')
-    plt.xlabel('Time')
-    plt.ylabel('Mel Frequency')
-    plt.tight_layout()
-    plt.show()
 
 
 if __name__ == '__main__':
