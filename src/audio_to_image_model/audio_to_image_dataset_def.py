@@ -31,7 +31,7 @@ class BirdDataset(Dataset):
         if self.transform:
             mel_spectrogram = self.transform(mel_spectrogram)
 
-        one_hot_label = self.label_to_onehot(primary_label, num_classes)
+        one_hot_label = self.label_to_onehot(primary_label, self.num_classes)
         return mel_spectrogram, one_hot_label
 
     def pad_or_truncate(self, mel_spectrogram, length):
