@@ -35,6 +35,7 @@ test_metadata.to_csv("../../../data/test_metadata.csv", index=False)
 val_metadata.to_csv("../../../data/val_metadata.csv", index=False)
 local_metadata_subset.to_csv("../../../data/local_subset.csv", index=False)
 
+# TODO: Use StratifiedShuffleSplit instead of GroupShuffleSplit
 
 
 
