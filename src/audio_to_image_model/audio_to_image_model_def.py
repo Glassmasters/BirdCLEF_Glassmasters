@@ -3,7 +3,15 @@ import torch.nn as nn
 
 # Model Definition
 class CustomCNN(nn.Module):
+    """
+    A custom convolutional neural network (CNN) model for bird sound classification.
+    """
     def __init__(self, num_classes=264):
+        """
+        Initialize the model
+        Args:
+            num_classes (int, optional): The number of bird species. Defaults to 264.
+        """
         super(CustomCNN, self).__init__()
 
         self.conv1 = nn.Sequential(
@@ -42,6 +50,13 @@ class CustomCNN(nn.Module):
         self.sigmoid = nn.Sigmoid()
 
     def forward(self, x):
+        """
+        Forward pass of the model
+        Args:
+            x (torch.Tensor): Input tensor
+        Returns:
+            torch.Tensor: The output tensor after processing by the model.
+        """
         x = self.conv1(x)
         x = self.conv2(x)
         x = self.conv3(x)
