@@ -2,9 +2,7 @@
 
 import pandas as pd
 from sklearn.utils import resample
-
-import pandas as pd
-from sklearn.utils import resample
+import matplotlib.pyplot as plt
 
 
 def balance_dataset(metadata_df, sampling_strategy='auto'):
@@ -43,4 +41,29 @@ def balance_dataset(metadata_df, sampling_strategy='auto'):
     return balanced_metadata_df
 
 
+def plot_class_occurrences(metadata_df):
+    class_counts = metadata_df['primary_label'].value_counts().to_dict()
 
+    fig, ax = plt.subplots(figsize=(20, 8))
+    ax.bar(class_counts.keys(), class_counts.values())
+    ax.set_xlabel('Class')
+    ax.set_ylabel('Occurrences')
+    ax.set_title('Occurrences of Classes in the Balanced Dataset')
+    plt.xticks(rotation=90)
+    plt.show()
+
+
+if __name__ == '__main__':
+    # Base path of the dataset
+    DATASET_BASE_FILE_PATH = r"D:\kaggle_competition\birdclef-2023"
+    # Load the metadata file
+    metadata_df = pd.read_csv(DATASET_BASE_FILE_PATH + r"\train_metadata.csv")
+
+    # Balance the dataset
+    balanced_metadata_df = balance_dataset(metadata_df)
+
+    # Save the balanced metadata file
+    balanced_metadata_df.to_csv(r"train_metadata_subset_balanced.csv", index=False)
+
+    # Plot the occurrences of each class in the balanced dataset
+    plot_class_occurrences(balanced_metadata_df)
