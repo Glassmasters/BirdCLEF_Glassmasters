@@ -5,7 +5,7 @@ from src.plotting.plot_mel_spectogram import plot_mel_spectrogram
 import torchaudio
 import torch
 import torchvision.transforms as transforms
-import matplotlib.pyplot as plt
+from src.plotting.plot_waveform import plot_waveform
 
 DATASET_BASE_FILE_PATH = r"D:\kaggle_competition\birdclef-2023"
 TRAIN_SET_FILE_DIR = r"\train_audio"
@@ -83,18 +83,7 @@ def preprocess_audio(file_path):
     return mel_spectrogram
 
 
-def plot_waveform(waveform):
-    """
-    Plot the waveform of an audio signal.
-    Args:
-        waveform (torch.Tensor): The audio waveform.
-    """
-    plt.figure()
-    plt.plot(waveform.t().numpy())
-    plt.xlabel("Time (samples)")
-    plt.ylabel("Amplitude")
-    plt.title("Waveform")
-    plt.show()
+
 
 
 if __name__ == '__main__':
