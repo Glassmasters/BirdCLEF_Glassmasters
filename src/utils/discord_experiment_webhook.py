@@ -26,6 +26,7 @@ def send_discord_message(webhook_url, results):
 webhook_url = "WEBHOOK_URL"
 results = [
     ("Training Parameters", 3447003, {
+        "name": "My_model",
         "learning_rate": 0.01,
         "batch_size": 64,
         "epochs": 50,
