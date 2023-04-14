@@ -10,3 +10,6 @@ librosa~=0.10.0.post2
 torchaudio~=0.11.0
 torchvision~=0.12.0
 matplotlib~=3.6.3
+
+# Progress bar
+tqdm~=4.64.1
