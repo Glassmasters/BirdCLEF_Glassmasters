@@ -8,6 +8,7 @@ from torch.utils.data import random_split
 from torch.utils.data import DataLoader
 import torch.optim as optim
 import warnings
+from src.preprocess.audio_to_image.data_augmentation import AugmentMelSpectrogram
 
 warnings.filterwarnings("ignore")
 
@@ -26,7 +27,8 @@ TRAIN_SET_FILE_DIR = r"\train_audio"
 metadata_df, num_classes = load_metadata(r"train_metadata_subset.csv")
 
 # Create a custom dataset object
-bird_dataset = BirdDataset(metadata_df, DATASET_BASE_FILE_PATH + TRAIN_SET_FILE_DIR, fixed_length=300, num_classes=num_classes)
+augmentations = AugmentMelSpectrogram()
+bird_dataset = BirdDataset(metadata_df, DATASET_BASE_FILE_PATH + TRAIN_SET_FILE_DIR, fixed_length=300, num_classes=num_classes, transform=augmentations or None)
 
 # Split the dataset into train and validation sets
 train_ratio = 0.8
