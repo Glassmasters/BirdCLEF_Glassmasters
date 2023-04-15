@@ -66,19 +66,21 @@ def apply_augmentations(mel_spectrogram):
     return mel_spectrogram
 
 
-def preprocess_audio(file_path):
+def preprocess_audio(file_path, inference=False):
     """
     Preprocess an audio file by converting it to a Mel spectrogram and applying augmentations.
     Args:
         file_path (str): Path to the audio file.
+        inference (bool): Whether to apply augmentations or not. Defaults to False.
     Returns:
         torch.Tensor: The preprocessed Mel spectrogram.
     """
     waveform = load_audio(file_path)
     mel_spectrogram = get_mel_spectrogram(waveform)
 
-    # Apply augmentations
-    mel_spectrogram = apply_augmentations(mel_spectrogram)
+    if not inference:
+        # Apply augmentations
+        mel_spectrogram = apply_augmentations(mel_spectrogram)
 
     return mel_spectrogram
 
