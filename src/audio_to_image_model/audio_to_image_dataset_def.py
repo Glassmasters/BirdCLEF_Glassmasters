@@ -4,6 +4,8 @@ from src.preprocess.audio_to_image.preprocess import preprocess_audio
 import torch
 
 torch.manual_seed(42)
+
+
 # Audio Dataset
 def pad_or_truncate(mel_spectrogram, length):
     """
@@ -29,6 +31,7 @@ class BirdDataset(Dataset):
     """
         A custom dataset class for loading and processing bird sound data.
     """
+
     def __init__(self, metadata_df, train_set_file_dir, fixed_length=5 * 32_000, num_classes=264, transform=None, ):
         """
         Initialize the dataset
