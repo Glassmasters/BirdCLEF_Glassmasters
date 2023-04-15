@@ -3,6 +3,8 @@ from torch.utils.data import Dataset
 from src.preprocess.audio_to_image.preprocess import preprocess_audio
 import torch
 
+torch.manual_seed(42)
+
 
 # Audio Dataset
 def pad_or_truncate(mel_spectrogram, length):
@@ -29,7 +31,8 @@ class BirdDataset(Dataset):
     """
         A custom dataset class for loading and processing bird sound data.
     """
-    def __init__(self, metadata_df, train_set_file_dir, fixed_length=300, num_classes=264, transform=None, ):
+
+    def __init__(self, metadata_df, train_set_file_dir, fixed_length=5 * 32_000, num_classes=264, transform=None, ):
         """
         Initialize the dataset
         Args:
@@ -68,6 +71,7 @@ class BirdDataset(Dataset):
         full_file_path = self.base_file_path + "\\" + file_path
         mel_spectrogram = preprocess_audio(full_file_path)
         # mel_spectrogram = torch.unsqueeze(torch.tensor(mel_spectrogram), 0)
+
         # Pad or truncate the mel spectrogram to a fixed length
         mel_spectrogram = pad_or_truncate(mel_spectrogram, self.fixed_length)
 

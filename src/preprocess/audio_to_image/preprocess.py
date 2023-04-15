@@ -5,6 +5,7 @@ from src.plotting.plot_mel_spectogram import plot_mel_spectrogram
 import torchaudio
 import torch
 import torchvision.transforms as transforms
+from src.plotting.plot_waveform import plot_waveform
 
 DATASET_BASE_FILE_PATH = r"D:\kaggle_competition\birdclef-2023"
 TRAIN_SET_FILE_DIR = r"\train_audio"
@@ -65,21 +66,26 @@ def apply_augmentations(mel_spectrogram):
     return mel_spectrogram
 
 
-def preprocess_audio(file_path):
+def preprocess_audio(file_path, inference=False):
     """
     Preprocess an audio file by converting it to a Mel spectrogram and applying augmentations.
     Args:
         file_path (str): Path to the audio file.
+        inference (bool): Whether to apply augmentations or not. Defaults to False.
     Returns:
         torch.Tensor: The preprocessed Mel spectrogram.
     """
     waveform = load_audio(file_path)
     mel_spectrogram = get_mel_spectrogram(waveform)
 
-    # Apply augmentations
-    mel_spectrogram = apply_augmentations(mel_spectrogram)
+    if not inference:
+        # Apply augmentations
+        mel_spectrogram = apply_augmentations(mel_spectrogram)
 
     return mel_spectrogram
+
+
+
 
 
 if __name__ == '__main__':
@@ -93,3 +99,5 @@ if __name__ == '__main__':
 
         # Plot the mel spectrogram
         plot_mel_spectrogram(mel_spectrogram, cmap='viridis', dynamic_range=80)
+        # waveform = load_audio(file_path)
+        # plot_waveform(waveform)
