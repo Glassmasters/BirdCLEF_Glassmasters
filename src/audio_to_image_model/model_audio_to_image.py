@@ -63,61 +63,63 @@ def _test(dataloader, model, loss_fn):
             loss = loss_fn(output, target)
             total_loss += loss.item()
 
-            test_loss /= num_batches
-            correct /= size
-            progress_bar.set_description(f"Test Error: \n Accuracy: {(100 * correct):>0.1f}%, Avg loss: {test_loss:>8f} \n")
+        test_loss /= num_batches
+        correct /= size
+        progress_bar.set_description(f"Test Error: \n Accuracy: {(100 * correct):>0.1f}%, Avg loss: {test_loss:>8f} \n")
 
+if __name__ == '__main__':
 
-# Define the dataset base path and the train set file directory
-DATASET_BASE_FILE_PATH = r"D:\kaggle_competition\birdclef-2023"
-TRAIN_SET_FILE_DIR = r"\train_audio"
+    # Define the dataset base path and the train set file directory
+    DATASET_BASE_FILE_PATH = r"D:\kaggle_competition\birdclef-2023"
+    TRAIN_SET_FILE_DIR = r"\train_audio"
 
-# Load the metadata file
-metadata_df, num_classes = load_metadata(r"../../data/local_subset.csv")
+    # Load the metadata file
+    metadata_df, num_classes = load_metadata(r"../../data/local_subset.csv")
 
-# Create a custom dataset object
-augmentations = AugmentMelSpectrogram()
-bird_dataset = BirdDataset(metadata_df, DATASET_BASE_FILE_PATH + TRAIN_SET_FILE_DIR, fixed_length=300, num_classes=num_classes, transform=augmentations or None)
+    # Create a custom dataset object
+    augmentations = AugmentMelSpectrogram()
+    bird_dataset = BirdDataset(metadata_df, DATASET_BASE_FILE_PATH + TRAIN_SET_FILE_DIR, fixed_length=300, num_classes=num_classes, transform=augmentations or None)
 
-# Split the dataset into train and validation sets
-train_ratio = 0.8
-train_size = int(train_ratio * len(bird_dataset))
-val_size = len(bird_dataset) - train_size
+    # Split the dataset into train and validation sets
+    train_ratio = 0.8
+    train_size = int(train_ratio * len(bird_dataset))
+    val_size = len(bird_dataset) - train_size
 
-train_dataset, val_dataset = random_split(bird_dataset, [train_size, val_size])
+    train_dataset, val_dataset = random_split(bird_dataset, [train_size, val_size])
 
-# Create data loaders
-batch_size = 16
-train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
-val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
+    # Create data loaders
+    batch_size = 16
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
+    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
 
-# Initialize GPU device if available
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-print("Running on device: {}".format(device))
+    # Initialize GPU device if available
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    print("Running on device: {}".format(device))
 
-# Initialize the model
-model = CustomCNN(num_classes).to(device)
-print(model)
+    # Initialize the model
+    model = CustomCNN(num_classes).to(device)
+    print(model)
 
-# Initialize the model weights
-model.apply(init_weights)
+    # Initialize the model weights
+    model.apply(init_weights)
 
-# Define the loss function and the optimizer
-criterion = nn.BCELoss()
-optimizer = optim.Adam(model.parameters(), lr=0.001)
+    # Define the loss function and the optimizer
+    criterion = nn.BCELoss()
+    optimizer = optim.Adam(model.parameters(), lr=0.001)
 
-# Train the model
-num_epochs = 10
-for epoch in range(num_epochs):
-    # Train
-    train(train_loader, model, criterion, optimizer, epoch +1, num_epochs)
-    # Evaluate on the validation set
-    _test(val_loader, model, criterion)
+    # Train the model
+    num_epochs = 10
+    for epoch in range(num_epochs):
+        # Train
+        train(train_loader, model, criterion, optimizer, epoch +1, num_epochs)
+        # Evaluate on the validation set
+        _test(val_loader, model, criterion)
 
-torch.save(model.state_dict(), "../../models/model.pth")
-print("Saved PyTorch Model State to model.pth")
+    # TODO: Save model not only for inference but also for training
+    torch.save(model.state_dict(), "../../models/model.pth")
+    print("Saved PyTorch Model State to model.pth")
 
-# TODO: Different optimizer and loss function
-# TODO: Different augmentation techniques
-# TODO: Other Model? Pretrained model?
-# TODO: DIfferent method to handle inblaslance audio length
+    # TODO: Different optimizer and loss function
+    # TODO: Different augmentation techniques
+    # TODO: Other Model? Pretrained model?
+    # TODO: DIfferent method to handle inblaslance audio length
