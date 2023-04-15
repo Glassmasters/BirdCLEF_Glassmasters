@@ -63,9 +63,9 @@ def _test(dataloader, model, loss_fn):
             loss = loss_fn(output, target)
             total_loss += loss.item()
 
-    test_loss /= num_batches
-    correct /= size
-    progress_bar.set_description(f"Test Error: \n Accuracy: {(100 * correct):>0.1f}%, Avg loss: {test_loss:>8f} \n")
+            test_loss /= num_batches
+            correct /= size
+            progress_bar.set_description(f"Test Error: \n Accuracy: {(100 * correct):>0.1f}%, Avg loss: {test_loss:>8f} \n")
 
 
 # Define the dataset base path and the train set file directory
@@ -114,7 +114,7 @@ for epoch in range(num_epochs):
     # Evaluate on the validation set
     _test(val_loader, model, criterion)
 
-torch.save(model.state_dict(), "model.pth")
+torch.save(model.state_dict(), "../../models/model.pth")
 print("Saved PyTorch Model State to model.pth")
 
 # TODO: Different optimizer and loss function
