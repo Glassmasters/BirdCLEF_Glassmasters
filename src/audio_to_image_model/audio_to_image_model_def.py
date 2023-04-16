@@ -1,11 +1,13 @@
 import torch.nn as nn
-
+from torchvision import models
+import torch
 
 # Model Definition
 class CustomCNN(nn.Module):
     """
     A custom convolutional neural network (CNN) model for bird sound classification.
     """
+
     def __init__(self, num_classes=264):
         """
         Initialize the model
@@ -68,5 +70,51 @@ class CustomCNN(nn.Module):
         x = self.relu(x)
         x = self.fc2(x)
         x = self.sigmoid(x)
+
+        return x
+
+
+class PretrainedBirdClassifier(nn.Module):
+    """
+    A bird sound classification model using a pre-trained CNN.
+    """
+
+    def __init__(self, num_classes=264, trainable=False):
+        """
+        Initialize the model.
+        Args:
+            num_classes (int, optional): The number of bird species. Defaults to 264.
+            trainable (bool, optional): If True, the pre-trained model's weights will be updated during training.
+        """
+        super(PretrainedBirdClassifier, self).__init__()
+
+        # Load a pre-trained ResNet model and remove the final classification layer
+        self.base_model = models.resnet50(pretrained=True)
+        num_features = self.base_model.fc.in_features
+        self.base_model = nn.Sequential(*list(self.base_model.children())[:-1])
+
+        # Set the requires_grad attribute based on the trainable parameter
+        for param in self.base_model.parameters():
+            param.requires_grad = trainable
+
+        # Add a custom classification layer
+        self.classifier = nn.Sequential(
+            nn.Linear(num_features, 2048),
+            nn.ReLU(inplace=True),
+            nn.Linear(2048, num_classes),
+            nn.Sigmoid()
+        )
+
+    def forward(self, x):
+        """
+        Forward pass of the model
+        Args:
+            x (torch.Tensor): Input tensor
+        Returns:
+            torch.Tensor: The output tensor after processing by the model.
+        """
+        x = self.base_model(x)
+        x = torch.flatten(x, 1)
+        x = self.classifier(x)
 
         return x
