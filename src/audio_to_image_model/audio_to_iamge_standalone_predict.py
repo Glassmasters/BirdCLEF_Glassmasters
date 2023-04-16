@@ -70,7 +70,7 @@ def inference(audio_path, model, label_to_bird_map, threshold=0.5017, device='cp
 
 if __name__ == '__main__':
     # Set parameters here
-    TEST_FILE_PATH = r"D:\kaggle_competition\birdclef-2023\test_soundscapes"
+    TEST_FOLDER_PATH = r"D:\kaggle_competition\birdclef-2023\test_soundscapes"
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
     # Load your model and preprocessing function here
@@ -84,7 +84,7 @@ if __name__ == '__main__':
     # Create an empty DataFrame to store concatenated results
     submission_df = pd.DataFrame()
 
-    for audio_path in list(glob.glob(rf"{TEST_FILE_PATH}/*.ogg")):
+    for audio_path in list(glob.glob(rf"{TEST_FOLDER_PATH}/*.ogg")):
         print(audio_path)
 
         # Get the result DataFrame for the current audio file
