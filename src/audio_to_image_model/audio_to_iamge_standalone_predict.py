@@ -44,7 +44,9 @@ def generate_csv(predictions, threshold, row_id_prefix, label_to_bird_map):
 
     for i, pred in enumerate(predictions):
         print(f"Prediction {i}: {pred}")
-        birds_present = {label_to_bird_map[index]: 1 if p >= threshold else 0 for index, p in enumerate(pred[0])}
+        max_index = np.argmax(pred[0])
+        # birds_present = {label_to_bird_map[index]: 1 if p >= threshold else 0 for index, p in enumerate(pred[0])}
+        birds_present = {label_to_bird_map[index]: 1 if index == max_index else 0 for index, p in enumerate(pred[0])}
         row_id = f"{row_id_prefix}_{i * 5 + 5}"
         result_rows.append([row_id] + list(birds_present.values()))
 
