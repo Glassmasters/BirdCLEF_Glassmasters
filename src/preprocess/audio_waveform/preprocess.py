@@ -13,6 +13,23 @@ DATASET_BASE_FILE_PATH = r"D:\Datasets\birdclef-2023"
 TRAIN_SET_FILE_DIR = r"\train_audio"
 
 
+def truncate_or_fill(input_waveform: np.ndarray, sampling_rate: float, target_waveform_duration: float):
+        target_waveform_length = target_waveform_duration * sampling_rate
+
+        if len(input_waveform) >= target_waveform_length:
+            # truncate
+            truncated_waveform = input_waveform[0:target_waveform_length]
+            return truncated_waveform
+        else:
+            # fill
+            # divide target by current length and add 1 to make sure that the new length is higher than the target length
+            repitition_times = int(target_waveform_length/len(input_waveform) + 1)
+            repeated_waveform = np.repeat(input_waveform, repitition_times)
+
+            filled_waveform = repeated_waveform[0:target_waveform_length]
+            return filled_waveform
+
+
 class AudioWaveformAugmentation:
     def __init__(self, sampling_rate: float = -1, target_waveform_duration: float = 5):
         self.sampling_rate = sampling_rate
@@ -72,42 +89,63 @@ class AudioWaveformAugmentation:
 
         return transformed_wav
 
-'''
-def apply_augmentation(input_wav: np.ndarray) -> np.ndarray:
-    augment = Compose([
-        AddGaussianNoise(min_amplitude=0.005, max_amplitude=0.015, p=1.0),
-        # TimeStretch(min_rate=0.8, max_rate=1.25, p=1.0),
-        # PitchShift(min_semitones=-4, max_semitones=4, p=1.0),
-        # Shift(min_fraction=-0.5, max_fraction=0.5, p=1.0),
+def _add_gaussian_noise(input_waveform: np.ndarray, samplerate: float):
+    augment_with_gaussian_noise = Compose([
+        AddGaussianNoise(min_amplitude=0.005, max_amplitude=0.015, p=1.0)
     ])
-
-    transformed_wav = augment(samples=input_wav, sample_rate=16000)
+    transformed_wav = augment_with_gaussian_noise(samples=input_waveform, sample_rate=samplerate)
 
     return transformed_wav
-'''
-
-def load_waveform(file_path: str) -> np.ndarray:
-    y_waveform, sampling_rate_waveform = librosa.load(file_path)
-    print(len(y_waveform))
-    print(sampling_rate_waveform)
-    print(f"Duration in s: {len(y_waveform)/sampling_rate_waveform}")
-
-    return y_waveform, sampling_rate_waveform
 
 
-if __name__ == '__main__':
-    folder_path = os.path.join(DATASET_BASE_FILE_PATH + TRAIN_SET_FILE_DIR + r"\abethr1")
+def _pitch_shift(input_waveform: np.ndarray, samplerate: float):
+    augment_with_pitch_shift = Compose([
+        PitchShift(min_semitones=-4, max_semitones=4, p=1.0)
+    ])
+    transformed_wav = augment_with_pitch_shift(samples=input_waveform, sample_rate=samplerate)
 
-    for file in os.listdir(folder_path):
-        file_path = os.path.join(folder_path, file)
+    return transformed_wav
 
-        waveform, sr = load_waveform(file_path)
-        # augmented_waveforms = apply_augmentation(waveform)
-        # plot_waveforms(waveform, augmented_waveforms)
 
-        audio_augmentation = AudioWaveformAugmentation(sampling_rate=sr)
-        # augmented_waveforms = audio_augmentation.add_gaussian_noise(waveform)
-        # plot_waveforms(waveform, augmented_waveforms)
+def _reverse(input_waveform: np.ndarray, samplerate: float):
+    augment_with_reverse = Compose([
+        Reverse(p=1.0)
+    ])
+    transformed_wav = augment_with_reverse(samples=input_waveform, sample_rate=samplerate)
 
-        new_wav = audio_augmentation.truncate_or_fill(waveform)
-        print(len(new_wav))
+    return transformed_wav
+
+
+def _shift(input_waveform: np.ndarray, samplerate: float):
+    augment_with_shift = Compose([
+        Shift(min_fraction=-0.5, max_fraction=0.5, fade=True, p=1.0)
+    ])
+    transformed_wav = augment_with_shift(samples=input_waveform, sample_rate=samplerate)
+
+    return transformed_wav
+
+
+def _time_stretch(input_waveform: np.ndarray, samplerate: float):
+    augment_with_time_stretch = Compose([
+        TimeStretch(min_rate=0.8, max_rate=1.25, p=1.0)
+    ])
+    transformed_wav = augment_with_time_stretch(samples=input_waveform, sample_rate=samplerate)
+
+    return transformed_wav
+
+
+def _shift_in_time(input_waveform: np.ndarray, samplerate: float):
+    shift_steps = np.random.randint(1, 10)
+    shifted_wav = np.roll(input_waveform, shift_steps)
+    
+    return shifted_wav
+
+
+available_functions = {
+    "add_gaussian_noise": _add_gaussian_noise,
+    "pitch_shift": _pitch_shift,
+    "reverse": _reverse,
+    "shift": _shift,
+    "time_stretch": _time_stretch,
+    "shift_in_time": _shift_in_time
+}
