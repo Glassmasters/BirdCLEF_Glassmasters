@@ -1,4 +1,5 @@
 # This file defines the dataset structure to be used by the audio to image model
+import random
 from torch.utils.data import Dataset
 from src.preprocess.audio_to_image.preprocess import preprocess_audio
 import torch
@@ -9,22 +10,43 @@ torch.manual_seed(42)
 # Audio Dataset
 def pad_or_truncate(mel_spectrogram, length):
     """
-    Pad or truncate the mel spectrogram to a fixed length
-    Args:
-        mel_spectrogram (torch.Tensor): The mel spectrogram tensor.
-        length (int): The fixed length to pad or truncate the mel spectrogram to
-    Returns:
-        torch.Tensor: The padded or truncated mel spectrogram.
-    """
+   Pad or truncate the mel spectrogram to a fixed length
+   Args:
+       mel_spectrogram (torch.Tensor): The mel spectrogram tensor.
+       length (int): The fixed length to pad or truncate the mel spectrogram to
+   Returns:
+       torch.Tensor: The padded or truncated mel spectrogram.
+   """
     mel_spectrogram = torch.squeeze(mel_spectrogram)
     if mel_spectrogram.shape[1] < length:
         padding = length - mel_spectrogram.shape[1]
         mel_spectrogram = torch.nn.functional.pad(mel_spectrogram, (0, padding), 'constant', 0)
     else:
         mel_spectrogram = mel_spectrogram[:, :length]
-
     mel_spectrogram = torch.unsqueeze(mel_spectrogram, 0)
     return mel_spectrogram
+
+
+def split_audio(mel_spectrogram_full, segment_length=5, sample_rate=32000, n_fft=2048):
+    num_frames = mel_spectrogram_full.shape[2]
+    duration = num_frames * (n_fft // 2) / sample_rate # Doc correct?
+    segments = []
+
+    if int(duration) == 0:
+        return mel_spectrogram_full
+
+    for start in range(0, int(duration), segment_length):
+        end = start + segment_length
+        if end > duration:
+            end = duration
+        start_frame = int(start * (sample_rate / (n_fft // 2)))
+        end_frame = int(end * (sample_rate / (n_fft // 2)))
+        segment = mel_spectrogram_full[..., start_frame:end_frame]
+        segments.append(segment)
+
+    segment = random.choice(segments)
+    print("segment.shape: ", segment.shape)
+    return segment
 
 
 class BirdDataset(Dataset):
@@ -32,19 +54,21 @@ class BirdDataset(Dataset):
         A custom dataset class for loading and processing bird sound data.
     """
 
-    def __init__(self, metadata_df, train_set_file_dir, fixed_length=5 * 32_000, num_classes=264, transform=None, ):
+    def __init__(self, metadata_df, train_set_file_dir, fixed_length=5, num_classes=264, transform=None, ):
         """
         Initialize the dataset
         Args:
             metadata_df (pd.DataFrame): A dataframe containing metadata for the audio files.
             train_set_file_dir (str): The base directory for the training set files.
-            fixed_length (int, optional): The fixed length to pad or truncate the mel spectrograms to. Defaults to 300.
+            fixed_length (int, optional): The fixed length to pad or truncate the mel spectrograms to. Defaults to 5 (seconds).
             num_classes (int, optional): The number of bird species. Defaults to 264.
             transform (callable, optional): Optional transform to be applied on a sample. Defaults to None.
         """
+        self.sample_rate = 32_000
+        self.n_fft = 2048
         self.metadata_df = metadata_df
         self.transform = transform
-        self.fixed_length = fixed_length
+        self.fixed_length = int(fixed_length * (self.sample_rate / (self.n_fft // 2)))
         self.num_classes = num_classes
         self.base_file_path = train_set_file_dir
         self.label_to_index = {label: index for index, label in enumerate(sorted(self.metadata_df['primary_label'].unique()))}
@@ -72,6 +96,8 @@ class BirdDataset(Dataset):
         mel_spectrogram = preprocess_audio(full_file_path)
         # mel_spectrogram = torch.unsqueeze(torch.tensor(mel_spectrogram), 0)
 
+        # Cut the mel spectrogram to pieces and return a random piece
+        mel_spectrogram = split_audio(mel_spectrogram)
         # Pad or truncate the mel spectrogram to a fixed length
         mel_spectrogram = pad_or_truncate(mel_spectrogram, self.fixed_length)
 
@@ -79,6 +105,7 @@ class BirdDataset(Dataset):
             mel_spectrogram = self.transform(mel_spectrogram)
 
         one_hot_label = self.label_to_onehot(primary_label, self.num_classes)
+
         return mel_spectrogram, one_hot_label
 
     def label_to_onehot(self, label, num_classes):
