@@ -7,7 +7,7 @@ import warnings
 from torch.utils.data import random_split
 from torch.utils.data import DataLoader
 
-from audio_to_image_model_def import CustomCNN
+from audio_to_image_model_def import CustomCNN, PretrainedBirdClassifier, ImprovedCustomCNN
 from audio_to_image_dataset_def import BirdDataset
 from src.preprocess.audio_to_image.data_augmentation import AugmentMelSpectrogram
 
@@ -78,7 +78,7 @@ if __name__ == '__main__':
 
     # Create a custom dataset object
     augmentations = AugmentMelSpectrogram()
-    bird_dataset = BirdDataset(metadata_df, DATASET_BASE_FILE_PATH + TRAIN_SET_FILE_DIR, fixed_length=300, num_classes=num_classes, transform=augmentations or None)
+    bird_dataset = BirdDataset(metadata_df, DATASET_BASE_FILE_PATH + TRAIN_SET_FILE_DIR, num_classes=num_classes, transform=augmentations or None)
 
     # Split the dataset into train and validation sets
     train_ratio = 0.8
@@ -97,7 +97,7 @@ if __name__ == '__main__':
     print("Running on device: {}".format(device))
 
     # Initialize the model
-    model = CustomCNN(num_classes).to(device)
+    model = ImprovedCustomCNN(num_classes).to(device)
     print(model)
 
     # Initialize the model weights
@@ -123,3 +123,10 @@ if __name__ == '__main__':
     # TODO: Different augmentation techniques
     # TODO: Other Model? Pretrained model?
     # TODO: DIfferent method to handle inblaslance audio length
+
+#-> kein threshold
+#--> Stack 5 second blocks
+#--> early stopping
+#--> accuracy reset
+#--> Audio fgeature extraction
+
