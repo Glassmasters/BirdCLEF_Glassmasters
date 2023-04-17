@@ -50,11 +50,12 @@ def train(dataloader, model, loss_fn, optimizer, epoch, total_epochs):
         target_labels = target.argmax(dim=1, keepdim=True)
 
         correct += pred.eq(target_labels.view_as(pred)).sum().item()
+        loss = loss.item()
 
         progress_bar.set_description(f"Epoch [{epoch}/{total_epochs}]")
         progress_bar.set_postfix(loss=loss, accuracy=(100 * correct / size))
 
-    return loss.item(), 100 * correct / size
+    return loss, 100 * correct / size
 
 
 def _test(dataloader, model, loss_fn):
@@ -81,7 +82,7 @@ def _test(dataloader, model, loss_fn):
 
             correct += pred.eq(target_labels.view_as(pred)).sum().item()
 
-        print(f"\nTest Error:{total_loss / size:>8f}  Accuracy: {(100 * correct / size):>0.1f}%\n")
+        print(f"\nTest Loss:{total_loss / size:>8f}  Accuracy: {(100 * correct / size):>0.1f}%\n")
 
     return total_loss / size, 100 * correct / size
 
@@ -116,7 +117,8 @@ if __name__ == '__main__':
     print("Running on device: {}".format(device))
 
     # Initialize the model
-    model = ImprovedCustomCNN(num_classes).to(device)
+    #model = ImprovedCustomCNN(num_classes).to(device)
+    model = PretrainedBirdClassifier(num_classes).to(device)
     print(model)
 
     # Initialize the model weights
@@ -127,7 +129,7 @@ if __name__ == '__main__':
     optimizer = optim.Adam(model.parameters(), lr=0.001)
 
     # Train the model
-    num_epochs = 2
+    num_epochs = 20
     train_losses = []
     train_accuracies = []
     val_losses = []
@@ -143,7 +145,7 @@ if __name__ == '__main__':
         val_losses.append(val_loss)
         val_accuracies.append(val_accuracy)
 
-    # TODO: Save model not only for inference but also for training
+    # Save the model
     torch.save(model.state_dict(), "../../models/model2.pth")
     print("Saved PyTorch Model State to model.pth")
 

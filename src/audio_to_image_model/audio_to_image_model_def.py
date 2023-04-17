@@ -1,6 +1,7 @@
 import torch.nn as nn
 from torchvision import models
 import torch
+from torchvision.models import resnet18
 
 
 # Model Definition
@@ -75,52 +76,6 @@ class CustomCNN(nn.Module):
         return x
 
 
-class PretrainedBirdClassifier(nn.Module):
-    """
-    A bird sound classification model using a pre-trained CNN.
-    """
-
-    def __init__(self, num_classes=264, trainable=False):
-        """
-        Initialize the model.
-        Args:
-            num_classes (int, optional): The number of bird species. Defaults to 264.
-            trainable (bool, optional): If True, the pre-trained model's weights will be updated during training.
-        """
-        super(PretrainedBirdClassifier, self).__init__()
-
-        # Load a pre-trained ResNet model and remove the final classification layer
-        self.base_model = models.resnet50(pretrained=True)
-        num_features = self.base_model.fc.in_features
-        self.base_model = nn.Sequential(*list(self.base_model.children())[:-1])
-
-        # Set the requires_grad attribute based on the trainable parameter
-        for param in self.base_model.parameters():
-            param.requires_grad = trainable
-
-        # Add a custom classification layer
-        self.classifier = nn.Sequential(
-            nn.Linear(num_features, 2048),
-            nn.ReLU(inplace=True),
-            nn.Linear(2048, num_classes),
-            nn.Sigmoid()
-        )
-
-    def forward(self, x):
-        """
-        Forward pass of the model
-        Args:
-            x (torch.Tensor): Input tensor
-        Returns:
-            torch.Tensor: The output tensor after processing by the model.
-        """
-        x = self.base_model(x)
-        x = torch.flatten(x, 1)
-        x = self.classifier(x)
-
-        return x
-
-
 class ImprovedCustomCNN(nn.Module):
     """
     An improved custom convolutional neural network (CNN) model for bird sound classification,
@@ -187,14 +142,12 @@ class ImprovedCustomCNN(nn.Module):
         return x
 
 
-from torchvision.models import resnet18
-
 class PretrainedBirdClassifier(nn.Module):
     """
     A bird sound classification model based on a pre-trained ResNet-18.
     """
 
-    def __init__(self, num_classes=264):
+    def __init__(self, num_classes=264, fine_tune_last_blocks=True):
         """
         Initialize the model
         Args:
@@ -205,11 +158,34 @@ class PretrainedBirdClassifier(nn.Module):
         # Load pre-trained ResNet-18 model
         self.base_model = resnet18(pretrained=True)
 
+        # Set the requires_grad attribute based on the fine_tune_last_blocks parameter
+        for name, param in self.base_model.named_parameters():
+            if fine_tune_last_blocks:
+                # Fine-tune the last two residual blocks (layer3 and layer4)
+                if "layer3" in name or "layer4" in name:
+                    param.requires_grad = True
+                else:
+                    param.requires_grad = False
+            else:
+                param.requires_grad = False
+
         # Replace the first convolutional layer to accept single-channel input (melspectrogram)
         self.base_model.conv1 = nn.Conv2d(1, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False)
 
         # Replace the last fully connected layer for bird species classification
         self.base_model.fc = nn.Linear(self.base_model.fc.in_features, num_classes)
+
+        # Define the number of features from the pre-trained model
+        num_features = self.base_model.fc.in_features
+
+        # Add a custom classification layer
+        self.base_model.fc = nn.Sequential(
+            nn.Linear(self.base_model.fc.in_features, 2048),
+            nn.ReLU(inplace=True),
+            nn.Linear(2048, num_classes),
+            #nn.Sigmoid()
+            nn.Softmax(dim=1)
+        )
 
     def forward(self, x):
         """
