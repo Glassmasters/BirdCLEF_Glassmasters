@@ -10,6 +10,9 @@ import soundfile as sf
 from src.preprocess.audio_waveform import preprocess
 
 
+random.seed(42)
+
+
 def _load_waveform(file_path: str) -> np.ndarray:
     y_waveform, sampling_rate_waveform = librosa.load(file_path)
 
