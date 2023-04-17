@@ -10,6 +10,7 @@ from torch.utils.data import DataLoader
 from audio_to_image_model_def import CustomCNN, PretrainedBirdClassifier, ImprovedCustomCNN
 from audio_to_image_dataset_def import BirdDataset
 from src.preprocess.audio_to_image.data_augmentation import AugmentMelSpectrogram
+from src.plotting.plot_training_curve import plot_loss_and_accuracy
 
 warnings.filterwarnings("ignore")
 
@@ -30,7 +31,7 @@ def init_weights(m):
 
 def train(dataloader, model, loss_fn, optimizer, epoch, total_epochs):
     size = len(dataloader.dataset)
-    #model.train()
+    # model.train()
     correct = 0
 
     progress_bar = tqdm(train_loader)
@@ -49,17 +50,18 @@ def train(dataloader, model, loss_fn, optimizer, epoch, total_epochs):
         target_labels = target.argmax(dim=1, keepdim=True)
 
         correct += pred.eq(target_labels.view_as(pred)).sum().item()
-        loss, current = loss.item(), batch_idx * len(data)
 
         progress_bar.set_description(f"Epoch [{epoch}/{total_epochs}]")
-        progress_bar.set_postfix(loss= loss, accuracy= (100 * correct / size))
+        progress_bar.set_postfix(loss=loss, accuracy=(100 * correct / size))
+
+    return loss.item(), 100 * correct / size
 
 
 def _test(dataloader, model, loss_fn):
     size = len(dataloader.dataset)
     num_batches = len(dataloader)
     test_loss, correct = 0, 0
-    #model.eval()
+    # model.eval()
     total_loss = 0
 
     progress_bar = tqdm(val_loader)
@@ -79,7 +81,9 @@ def _test(dataloader, model, loss_fn):
 
             correct += pred.eq(target_labels.view_as(pred)).sum().item()
 
-        print(f"\nTest Error:{total_loss/size:>8f}  Accuracy: {(100 * correct / size):>0.1f}%\n")
+        print(f"\nTest Error:{total_loss / size:>8f}  Accuracy: {(100 * correct / size):>0.1f}%\n")
+
+    return total_loss / size, 100 * correct / size
 
 
 if __name__ == '__main__':
@@ -123,25 +127,36 @@ if __name__ == '__main__':
     optimizer = optim.Adam(model.parameters(), lr=0.001)
 
     # Train the model
-    num_epochs = 10
+    num_epochs = 2
+    train_losses = []
+    train_accuracies = []
+    val_losses = []
+    val_accuracies = []
     for epoch in range(num_epochs):
         # Train
-        train(train_loader, model, criterion, optimizer, epoch +1, num_epochs)
+        train_loss, train_accuracy = train(train_loader, model, criterion, optimizer, epoch + 1, num_epochs)
+        train_losses.append(train_loss)
+        train_accuracies.append(train_accuracy)
+
         # Evaluate on the validation set
-        _test(val_loader, model, criterion)
+        val_loss, val_accuracy = _test(val_loader, model, criterion)
+        val_losses.append(val_loss)
+        val_accuracies.append(val_accuracy)
 
     # TODO: Save model not only for inference but also for training
     torch.save(model.state_dict(), "../../models/model2.pth")
     print("Saved PyTorch Model State to model.pth")
+
+    # Plot the training curve
+    plot_loss_and_accuracy(train_losses, train_accuracies, val_losses, val_accuracies)
 
     # TODO: Different optimizer and loss function
     # TODO: Different augmentation techniques
     # TODO: Other Model? Pretrained model?
     # TODO: DIfferent method to handle inblaslance audio length
 
-#-> kein threshold
-#--> Stack 5 second blocks
-#--> early stopping
-#--> accuracy reset
-#--> Audio feature extraction
-
+# -> kein threshold
+# --> Stack 5 second blocks
+# --> early stopping
+# --> accuracy reset
+# --> Audio feature extraction
