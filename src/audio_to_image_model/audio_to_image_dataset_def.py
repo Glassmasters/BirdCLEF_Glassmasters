@@ -45,7 +45,7 @@ def split_audio(mel_spectrogram_full, segment_length=5, sample_rate=32000, n_fft
         segments.append(segment)
 
     segment = random.choice(segments)
-    print("segment.shape: ", segment.shape)
+
     return segment
 
 

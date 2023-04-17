@@ -30,7 +30,8 @@ def init_weights(m):
 
 def train(dataloader, model, loss_fn, optimizer, epoch, total_epochs):
     size = len(dataloader.dataset)
-    model.train()
+    #model.train()
+    correct = 0
 
     progress_bar = tqdm(train_loader)
 
@@ -42,16 +43,23 @@ def train(dataloader, model, loss_fn, optimizer, epoch, total_epochs):
         loss.backward()
         optimizer.step()
 
+        # Get the predicted class labels
+        pred = output.argmax(dim=1, keepdim=True)
+        # Convert the one-hot encoded target back to class labels
+        target_labels = target.argmax(dim=1, keepdim=True)
+
+        correct += pred.eq(target_labels.view_as(pred)).sum().item()
         loss, current = loss.item(), batch_idx * len(data)
+
         progress_bar.set_description(f"Epoch [{epoch}/{total_epochs}]")
-        progress_bar.set_postfix(loss= loss, accuracy= (100 * current / size))
+        progress_bar.set_postfix(loss= loss, accuracy= (100 * correct / size))
 
 
 def _test(dataloader, model, loss_fn):
     size = len(dataloader.dataset)
     num_batches = len(dataloader)
     test_loss, correct = 0, 0
-    model.eval()
+    #model.eval()
     total_loss = 0
 
     progress_bar = tqdm(val_loader)
@@ -63,9 +71,16 @@ def _test(dataloader, model, loss_fn):
             loss = loss_fn(output, target)
             total_loss += loss.item()
 
-        test_loss /= num_batches
-        correct /= size
-        progress_bar.set_description(f"Test Error: \n Accuracy: {(100 * correct):>0.1f}%, Avg loss: {test_loss:>8f} \n")
+            test_loss /= num_batches
+            # Get the predicted class labels
+            pred = output.argmax(dim=1, keepdim=True)
+            # Convert the one-hot encoded target back to class labels
+            target_labels = target.argmax(dim=1, keepdim=True)
+
+            correct += pred.eq(target_labels.view_as(pred)).sum().item()
+
+        print(f"\nTest Error:{total_loss/size:>8f}  Accuracy: {(100 * correct / size):>0.1f}%\n")
+
 
 if __name__ == '__main__':
 
@@ -116,7 +131,7 @@ if __name__ == '__main__':
         _test(val_loader, model, criterion)
 
     # TODO: Save model not only for inference but also for training
-    torch.save(model.state_dict(), "../../models/model.pth")
+    torch.save(model.state_dict(), "../../models/model2.pth")
     print("Saved PyTorch Model State to model.pth")
 
     # TODO: Different optimizer and loss function
