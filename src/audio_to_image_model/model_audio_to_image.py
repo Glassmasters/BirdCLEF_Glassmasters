@@ -128,5 +128,5 @@ if __name__ == '__main__':
 #--> Stack 5 second blocks
 #--> early stopping
 #--> accuracy reset
-#--> Audio fgeature extraction
+#--> Audio feature extraction
 

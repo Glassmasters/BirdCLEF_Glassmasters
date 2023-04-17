@@ -80,9 +80,8 @@ if __name__ == '__main__':
     model = ImprovedCustomCNN(num_classes).to(device)
     model.load_state_dict(torch.load("../../models/model_new.pth", map_location=torch.device(device)))
 
-    label_to_index_map = {label: index for index, label in enumerate(metadata_df['primary_label'].unique())}
+    label_to_index_map = {label: index for index, label in enumerate(sorted(metadata_df['primary_label'].unique()))}
     label_to_bird_map = {index: label for label, index in label_to_index_map.items()}
-
     # Create an empty DataFrame to store concatenated results
     submission_df = pd.DataFrame()
 
