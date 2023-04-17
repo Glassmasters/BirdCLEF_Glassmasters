@@ -2,6 +2,7 @@ import torch.nn as nn
 from torchvision import models
 import torch
 
+
 # Model Definition
 class CustomCNN(nn.Module):
     """
@@ -117,4 +118,106 @@ class PretrainedBirdClassifier(nn.Module):
         x = torch.flatten(x, 1)
         x = self.classifier(x)
 
+        return x
+
+
+class ImprovedCustomCNN(nn.Module):
+    """
+    An improved custom convolutional neural network (CNN) model for bird sound classification,
+    based on the input melspectrogram.
+    """
+
+    def __init__(self, num_classes=264):
+        """
+        Initialize the model
+        Args:
+            num_classes (int, optional): The number of bird species. Defaults to 264.
+        """
+        super(ImprovedCustomCNN, self).__init__()
+
+        self.conv_layers = nn.Sequential(
+            # Layer 1
+            nn.Conv2d(1, 32, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
+            nn.ReLU(),
+            nn.BatchNorm2d(32),
+            nn.MaxPool2d(kernel_size=(2, 2), stride=(2, 2)),
+
+            # Layer 2
+            nn.Conv2d(32, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
+            nn.ReLU(),
+            nn.BatchNorm2d(64),
+            nn.MaxPool2d(kernel_size=(2, 2), stride=(2, 2)),
+
+            # Layer 3
+            nn.Conv2d(64, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
+            nn.ReLU(),
+            nn.BatchNorm2d(128),
+            nn.MaxPool2d(kernel_size=(2, 2), stride=(2, 2)),
+
+            # Layer 4
+            nn.Conv2d(128, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
+            nn.ReLU(),
+            nn.BatchNorm2d(256),
+            nn.MaxPool2d(kernel_size=(2, 2), stride=(2, 2))
+        )
+
+        self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
+        self.fc_layers = nn.Sequential(
+            nn.Linear(256, 1024),
+            nn.ReLU(),
+            nn.BatchNorm1d(1024),
+            nn.Dropout(0.5),
+            nn.Linear(1024, num_classes),
+            nn.Sigmoid()
+        )
+
+    def forward(self, x):
+        """
+        Forward pass of the model
+        Args:
+            x (torch.Tensor): Input tensor (melspectrogram)
+        Returns:
+            torch.Tensor: The output tensor after processing by the model.
+        """
+        x = self.conv_layers(x)
+        x = self.avgpool(x)
+        x = x.view(x.size(0), -1)
+        x = self.fc_layers(x)
+
+        return x
+
+
+from torchvision.models import resnet18
+
+class PretrainedBirdClassifier(nn.Module):
+    """
+    A bird sound classification model based on a pre-trained ResNet-18.
+    """
+
+    def __init__(self, num_classes=264):
+        """
+        Initialize the model
+        Args:
+            num_classes (int, optional): The number of bird species. Defaults to 264.
+        """
+        super(PretrainedBirdClassifier, self).__init__()
+
+        # Load pre-trained ResNet-18 model
+        self.base_model = resnet18(pretrained=True)
+
+        # Replace the first convolutional layer to accept single-channel input (melspectrogram)
+        self.base_model.conv1 = nn.Conv2d(1, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False)
+
+        # Replace the last fully connected layer for bird species classification
+        self.base_model.fc = nn.Linear(self.base_model.fc.in_features, num_classes)
+
+    def forward(self, x):
+        """
+        Forward pass of the model
+        Args:
+            x (torch.Tensor): Input tensor (melspectrogram)
+        Returns:
+            torch.Tensor: The output tensor after processing by the model.
+        """
+        x = self.base_model(x)
         return x
