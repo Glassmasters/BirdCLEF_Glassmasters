@@ -6,7 +6,7 @@ import librosa
 import torch
 from src.audio_to_image_model.model_audio_to_image import load_metadata
 from src.preprocess.audio_to_image.preprocess import preprocess_audio
-from src.audio_to_image_model.audio_to_image_model_def import CustomCNN
+from src.audio_to_image_model.audio_to_image_model_def import CustomCNN, ImprovedCustomCNN
 
 
 def split_audio(audio_path, segment_length=5, sample_rate=32000, n_fft=2048):
@@ -76,9 +76,9 @@ if __name__ == '__main__':
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
     # Load your model and preprocessing function here
-    metadata_df, num_classes = load_metadata(r"D:\kaggle_competition\birdclef-2023\train_metadata.csv")
-    model = CustomCNN(num_classes).to(device)
-    model.load_state_dict(torch.load("../../models/model_kaggle.pth", map_location=torch.device(device)))
+    metadata_df, num_classes = load_metadata(r"C:\Users\phili\Projects\pythonProjects\BirdCLEF_Glassmasters\data\train_metadata_subset_balanced.csv")
+    model = ImprovedCustomCNN(num_classes).to(device)
+    model.load_state_dict(torch.load("../../models/model_new.pth", map_location=torch.device(device)))
 
     label_to_index_map = {label: index for index, label in enumerate(metadata_df['primary_label'].unique())}
     label_to_bird_map = {index: label for label, index in label_to_index_map.items()}
