@@ -46,6 +46,10 @@ class AudioDataBalancer:
         self.target_waveform_duration = target_waveform_duration
 
     def _create_dirs_for_balanced_data(self):
+        """
+        If not existing creates the overall target dir and in this target dir the directories
+        for each of the bird classes.
+        """
         if not os.path.exists(self.target_dir_balanced_data):
             os.makedirs(self.target_dir_balanced_data)
         for key in self.class_dist:
@@ -53,7 +57,14 @@ class AudioDataBalancer:
             if not os.path.exists(class_dir):
                 os.makedirs(class_dir)
 
-    def _preprocess_from_oversampled_classes(self, single_class_name):
+    def _preprocess_from_oversampled_classes(self, single_class_name: str):
+        """
+        :param single_class_name: str, the bird class for which the audio samples should be copied to
+        the respective target directory.
+
+        If the bird class is oversampled the first self.target_sample_size samples are truncated or filled
+        and then copied to the respective target directoy.
+        """
         source_dir_class = DATASET_BASE_FILE_PATH + TRAIN_SET_FILE_DIR + "\\" + str(single_class_name)
         target_dir_class = DATASET_BASE_FILE_PATH + TARGET_DIR + "\\" + str(single_class_name)
 
@@ -64,7 +75,14 @@ class AudioDataBalancer:
             sf.write(target_dir_class + "\\" + source_files[file_indice], processed_wav, samplerate, format='ogg', subtype='vorbis')
 
 
-    def _preprocess_for_undersampled_classes(self, single_class_name):
+    def _preprocess_for_undersampled_classes(self, single_class_name: str):
+        """
+        :param single_class_name: str, the bird class for which the audio samples should be copied to
+        the respective target directory.
+
+        Copies existing waveforms after truncation or filling to the target directory and then uses augmentation
+        techniques to sample up the undersampled classes.
+        """
         augmented_filename_waveform_sample_rate = {}
         orig_filename_waveform_sample_rate = {}
         source_dir_class = DATASET_BASE_FILE_PATH + TRAIN_SET_FILE_DIR + "\\" + str(single_class_name)
@@ -75,13 +93,13 @@ class AudioDataBalancer:
         for file_indice in range(0, len(source_files)):
             wav, samplerate = _load_waveform(source_dir_class + "\\" + source_files[file_indice])
             processed_wav = preprocess.truncate_or_fill(wav, samplerate, self.target_wav_duration)
-            filename = source_dir_class + "\\" + source_files[file_indice]
+            filename = target_dir_class + "\\" + source_files[file_indice].split('.')[0]
             orig_filename_waveform_sample_rate[filename] = [wav, samplerate, processed_wav]
 
         while missing_samples > 0:
             for file in orig_filename_waveform_sample_rate:
+                # TODO: Augmentation following some strategy, not only random
                 random_aug_method = random.choice(list(preprocess.available_functions))
-                print(random_aug_method)
                 processed_wav = preprocess.available_functions[random_aug_method](orig_filename_waveform_sample_rate[file][0], 
                                                                                      orig_filename_waveform_sample_rate[file][1])
                 aug_filename = file + "_" + random_aug_method
@@ -89,34 +107,44 @@ class AudioDataBalancer:
                                                                          orig_filename_waveform_sample_rate[file][1], 
                                                                          processed_wav]
                 
-            missing_samples -= 1
+                missing_samples -= 1
 
-        for filename in orig_filename_waveform_sample_rate:    
-            sf.write(filename, orig_filename_waveform_sample_rate[filename][2], 
+        for filename in orig_filename_waveform_sample_rate:
+            sf.write(filename + '.ogg', orig_filename_waveform_sample_rate[filename][2], 
                      orig_filename_waveform_sample_rate[filename][1], format='ogg', subtype='vorbis')
 
-        for filename in augmented_filename_waveform_sample_rate:    
-            sf.write(filename, augmented_filename_waveform_sample_rate[filename][2], 
+        for filename in augmented_filename_waveform_sample_rate: 
+            sf.write(filename + '.ogg', augmented_filename_waveform_sample_rate[filename][2], 
                      augmented_filename_waveform_sample_rate[filename][1], format='ogg', subtype='vorbis')
 
 
     def balance_dataset(self, direct_class_dist: dict=None):
+        """
+        :param direct_class_dist: dict, the dictionary holding the number of samples for each class.
+
+        For each bird class do the balancing by either use the waveforms of oversampled classes directly 
+        or oversample undersampled classes
+        """
         if direct_class_dist:
             self.class_dist = direct_class_dist
         self._create_dirs_for_balanced_data()
         
         for bird_class in self.class_dist:
+            print(bird_class)
             if self.class_dist[bird_class] >= self.target_sample_size:
-                # if bird_class == "abethr1":
-                    # self._preprocess_from_oversampled_classes(bird_class)
-                continue
+                self._preprocess_from_oversampled_classes(bird_class)
             else:
-                if bird_class == "hunsun2":
-                    self._preprocess_for_undersampled_classes(bird_class)
-                continue
+                self._preprocess_for_undersampled_classes(bird_class)
+
 
 
     def get_class_dist_from_metadata(self, metadata_filepath: str, class_column: str):
+        """
+        :param metadata_filepath: str, filepath to the metadata file.
+        :param class_column: str, specifies the column where the classes are stored in.
+
+        Extract the class distribution from a metadata csv-file.
+        """
         intermediate_class_dist = {}
         # currently only csv metadata files supported
         metadata_file = pd.read_csv(metadata_filepath)
@@ -129,6 +157,7 @@ class AudioDataBalancer:
 
 
 if __name__ == "__main__":
+    # example on hwo to use it
     DATASET_BASE_FILE_PATH = r"D:\Datasets\birdclef-2023"
     TRAIN_SET_FILE_DIR = r"\train_audio"
     TARGET_DIR = r"\train_audio_balanced"
