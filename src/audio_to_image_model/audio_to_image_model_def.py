@@ -1,7 +1,7 @@
 import torch.nn as nn
 from torchvision import models
 import torch
-from torchvision.models import resnet18
+from torchvision.models import resnet18, efficientnet_b0
 
 
 # Model Definition
@@ -183,8 +183,66 @@ class PretrainedBirdClassifier(nn.Module):
             nn.Linear(self.base_model.fc.in_features, 2048),
             nn.ReLU(inplace=True),
             nn.Linear(2048, num_classes),
-            #nn.Sigmoid()
-            nn.Softmax(dim=1)
+            # nn.Sigmoid()
+            #nn.Softmax(dim=1)
+        )
+
+    def forward(self, x):
+        """
+        Forward pass of the model
+        Args:
+            x (torch.Tensor): Input tensor (melspectrogram)
+        Returns:
+            torch.Tensor: The output tensor after processing by the model.
+        """
+        x = self.base_model(x)
+        return x
+
+
+class PretrainedEfficientNetBirdClassifier(nn.Module):
+    """
+    A bird sound classification model based on a pre-trained EfficientNet-b0.
+    """
+
+    def __init__(self, num_classes=264, fine_tune_last_blocks=True):
+        """
+        Initialize the model
+        Args:
+            num_classes (int, optional): The number of bird species. Defaults to 264.
+            fine_tune_last_blocks (bool, optional): Whether to fine-tune the last blocks of the base model. Defaults to True.
+        """
+        super(PretrainedEfficientNetBirdClassifier, self).__init__()
+
+        # Load pre-trained EfficientNet-b0 model
+        self.base_model = efficientnet_b0(pretrained=True)
+
+        # Set the requires_grad attribute based on the fine_tune_last_blocks parameter
+        for name, param in self.base_model.named_parameters():
+            if fine_tune_last_blocks:
+                # Fine-tune the last two stages (blocks 5 and 6)
+                if any(s in name for s in ["features.6.", "features.7."]):
+                    param.requires_grad = True
+                else:
+                    param.requires_grad = False
+            else:
+                param.requires_grad = False
+
+        # Replace the first convolutional layer to accept single-channel input (melspectrogram)
+        #self.base_model.conv_stem = nn.Conv2d(1, 32, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1), bias=False)
+
+        # Replace the last fully connected layer for bird species classification
+        num_features = self.base_model.classifier[1].in_features
+
+        self.base_model.classifier = nn.Sequential(
+            nn.Linear(num_features, 2048),
+            nn.BatchNorm1d(2048),
+            nn.ReLU(inplace=True),
+            nn.Dropout(p=0.5),
+            nn.Linear(2048, 1024),
+            nn.BatchNorm1d(1024),
+            nn.ReLU(inplace=True),
+            nn.Dropout(p=0.5),
+            nn.Linear(1024, num_classes),
         )
 
     def forward(self, x):
