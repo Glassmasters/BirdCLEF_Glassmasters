@@ -6,7 +6,7 @@ import librosa
 import torch
 from src.audio_to_image_model.model_audio_to_image import load_metadata
 from src.preprocess.audio_to_image.preprocess import preprocess_audio
-from src.audio_to_image_model.audio_to_image_model_def import CustomCNN, ImprovedCustomCNN
+from src.audio_to_image_model.audio_to_image_model_def import *
 
 
 def split_audio(audio_path, segment_length=5, sample_rate=32000, n_fft=2048):
@@ -56,6 +56,21 @@ def generate_csv(predictions, threshold, row_id_prefix, label_to_bird_map):
     return result_df
 
 
+# def generate_csv(predictions, threshold, row_id_prefix, label_to_bird_map):
+#    result_rows = []
+#    for i, pred in enumerate(predictions):
+#        print(f"Prediction {i}: {pred}")
+#        max_index = np.argmax(pred[0])
+#        birds_present = {label_to_bird_map[index]: pred[0][index] for index, p in enumerate(pred[0])}
+#        row_id = f"{row_id_prefix}_{i * 5 + 5}"
+#        result_rows.append([row_id] + list(birds_present.values()))
+#
+#    # Change the column names to bird names
+#    column_names = ['row_id'] + [label_to_bird_map[i] for i in range(0, len(label_to_bird_map))]
+#    result_df = pd.DataFrame(result_rows, columns=column_names)
+#    return result_df
+
+
 def inference(audio_path, model, label_to_bird_map, threshold=0.5017, device='cpu'):
     audio_segments = split_audio(audio_path)
     model.to(device)
@@ -77,8 +92,8 @@ if __name__ == '__main__':
 
     # Load your model and preprocessing function here
     metadata_df, num_classes = load_metadata(r"C:\Users\phili\Projects\pythonProjects\BirdCLEF_Glassmasters\data\train_metadata_subset_balanced.csv")
-    model = ImprovedCustomCNN(num_classes).to(device)
-    model.load_state_dict(torch.load("../../models/model_new.pth", map_location=torch.device(device)))
+    model = PretrainedBirdClassifier(num_classes).to(device)
+    model.load_state_dict(torch.load("../../models/model_pretrained.pth", map_location=torch.device(device)))
 
     label_to_index_map = {label: index for index, label in enumerate(sorted(metadata_df['primary_label'].unique()))}
     label_to_bird_map = {index: label for label, index in label_to_index_map.items()}
