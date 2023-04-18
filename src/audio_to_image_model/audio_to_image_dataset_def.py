@@ -54,7 +54,7 @@ class BirdDataset(Dataset):
         A custom dataset class for loading and processing bird sound data.
     """
 
-    def __init__(self, metadata_df, train_set_file_dir, fixed_length=5, num_classes=264, transform=None, ):
+    def __init__(self, metadata_df, train_set_file_dir, fixed_length=5, num_classes=264, transform=None,efficientnet=False ):
         """
         Initialize the dataset
         Args:
@@ -71,6 +71,7 @@ class BirdDataset(Dataset):
         self.fixed_length = int(fixed_length * (self.sample_rate / (self.n_fft // 2)))
         self.num_classes = num_classes
         self.base_file_path = train_set_file_dir
+        self.efficientnet = efficientnet
         self.label_to_index = {label: index for index, label in enumerate(sorted(self.metadata_df['primary_label'].unique()))}
 
     def __len__(self):
@@ -93,7 +94,7 @@ class BirdDataset(Dataset):
 
         # Load and preprocess the audio
         full_file_path = self.base_file_path + "\\" + file_path
-        mel_spectrogram = preprocess_audio(full_file_path)
+        mel_spectrogram = preprocess_audio(full_file_path, inference=True)
         # mel_spectrogram = torch.unsqueeze(torch.tensor(mel_spectrogram), 0)
 
         # Cut the mel spectrogram to pieces and return a random piece
@@ -105,6 +106,16 @@ class BirdDataset(Dataset):
             mel_spectrogram = self.transform(mel_spectrogram)
 
         one_hot_label = self.label_to_onehot(primary_label, self.num_classes)
+        # Repeat Dimension to create RGB from greayscale
+        from src.plotting.plot_mel_spectogram import plot_mel_spectrogram
+        plot_mel_spectrogram(mel_spectrogram)
+
+        # Normalize the mel spectrogram
+       #mel_spectrogram2 = (mel_spectrogram - mel_spectrogram.mean()) / mel_spectrogram.std()
+       #plot_mel_spectrogram(mel_spectrogram2)
+        if self.efficientnet:
+            mel_spectrogram = mel_spectrogram.repeat(3, 1, 1)
+
 
         return mel_spectrogram, one_hot_label
 
