@@ -29,7 +29,7 @@ def pad_or_truncate(mel_spectrogram, length):
 
 def split_audio(mel_spectrogram_full, segment_length=5, sample_rate=32000, n_fft=2048):
     num_frames = mel_spectrogram_full.shape[2]
-    duration = num_frames * (n_fft // 2) / sample_rate # Doc correct?
+    duration = num_frames * (n_fft // 2) / sample_rate  # Doc correct?
     segments = []
 
     if int(duration) == 0:
@@ -54,7 +54,7 @@ class BirdDataset(Dataset):
         A custom dataset class for loading and processing bird sound data.
     """
 
-    def __init__(self, metadata_df, train_set_file_dir, fixed_length=5, num_classes=264, transform=None,efficientnet=False ):
+    def __init__(self, metadata_df, train_set_file_dir, fixed_length=5, num_classes=264, transform=None, efficientnet=False):
         """
         Initialize the dataset
         Args:
@@ -106,16 +106,16 @@ class BirdDataset(Dataset):
             mel_spectrogram = self.transform(mel_spectrogram)
 
         one_hot_label = self.label_to_onehot(primary_label, self.num_classes)
-        # Repeat Dimension to create RGB from greayscale
-        from src.plotting.plot_mel_spectogram import plot_mel_spectrogram
-        plot_mel_spectrogram(mel_spectrogram)
+
+        # from src.plotting.plot_mel_spectogram import plot_mel_spectrogram
+        # plot_mel_spectrogram(mel_spectrogram)
 
         # Normalize the mel spectrogram
-       #mel_spectrogram2 = (mel_spectrogram - mel_spectrogram.mean()) / mel_spectrogram.std()
-       #plot_mel_spectrogram(mel_spectrogram2)
+        # mel_spectrogram = (mel_spectrogram - mel_spectrogram.mean()) / mel_spectrogram.std()
+
+        # Repeat Dimension to create RGB from greayscale
         if self.efficientnet:
             mel_spectrogram = mel_spectrogram.repeat(3, 1, 1)
-
 
         return mel_spectrogram, one_hot_label
 
