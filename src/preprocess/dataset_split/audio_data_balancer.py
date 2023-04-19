@@ -166,8 +166,8 @@ if __name__ == "__main__":
     TARGET_DIR = r"\train_audio_balanced"
     metadata_file = os.path.join(DATASET_BASE_FILE_PATH + r"\train_metadata.csv")
 
-    audio_balancer = AudioDataBalancer(target_sample_size=10,
-                                       target_wav_duration=10,
+    audio_balancer = AudioDataBalancer(target_sample_size=50,
+                                       target_wav_duration=5,
                                        target_dir_balanced_data = os.path.join(DATASET_BASE_FILE_PATH + TARGET_DIR)
                                        )
     audio_balancer.get_class_dist_from_metadata(metadata_file, "primary_label")
