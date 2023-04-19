@@ -1,3 +1,4 @@
+import numpy as np
 import torch
 import torch.nn as nn
 import pandas as pd
@@ -7,7 +8,7 @@ import warnings
 from torch.utils.data import random_split
 from torch.utils.data import DataLoader
 
-from audio_to_image_model_def import CustomCNN, PretrainedBirdClassifier, ImprovedCustomCNN
+from audio_to_image_model_def import CustomCNN, PretrainedBirdClassifier, ImprovedCustomCNN, PretrainedEfficientNetBirdClassifier
 from audio_to_image_dataset_def import BirdDataset
 from src.preprocess.audio_to_image.data_augmentation import AugmentMelSpectrogram
 from src.plotting.plot_training_curve import plot_loss_and_accuracy
@@ -31,10 +32,11 @@ def init_weights(m):
 
 def train(dataloader, model, loss_fn, optimizer, epoch, total_epochs):
     size = len(dataloader.dataset)
-    # model.train()
+    model.train()
     correct = 0
+    predictions = 0
 
-    progress_bar = tqdm(train_loader)
+    progress_bar = tqdm(dataloader)
 
     for batch_idx, (data, target) in enumerate(progress_bar):
         data, target = data.to(device), target.to(device)
@@ -50,15 +52,20 @@ def train(dataloader, model, loss_fn, optimizer, epoch, total_epochs):
         target_labels = target.argmax(dim=1, keepdim=True)
 
         correct += pred.eq(target_labels.view_as(pred)).sum().item()
+        predictions += data.shape[0]
+
         loss = loss.item()
+        accuracy = 100 * correct / predictions
 
         progress_bar.set_description(f"Epoch [{epoch}/{total_epochs}]")
-        progress_bar.set_postfix(loss=loss, accuracy=(100 * correct / size))
+        progress_bar.set_postfix(loss=loss, accuracy=accuracy)
 
-    return loss, 100 * correct / size
+
+    return loss, accuracy
 
 
 def _test(dataloader, model, loss_fn):
+    model.eval()
     size = len(dataloader.dataset)
     num_batches = len(dataloader)
     test_loss, correct = 0, 0
@@ -71,7 +78,7 @@ def _test(dataloader, model, loss_fn):
         for batch_idx, (data, target) in enumerate(progress_bar):
             data, target = data.to(device), target.to(device)
             output = model(data)
-            loss = loss_fn(output, target)
+            loss = loss_fn(output, target.squeeze(1))
             total_loss += loss.item()
 
             test_loss /= num_batches
@@ -87,6 +94,13 @@ def _test(dataloader, model, loss_fn):
     return total_loss / size, 100 * correct / size
 
 
+def number_trainable_params(model):
+    total_params = sum(p.numel() for p in model.parameters())
+    trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    print(f"Total params: {total_params:,}")
+    print(f"Trainable params: {trainable_params:,}")
+
+
 if __name__ == '__main__':
 
     # Define the dataset base path and the train set file directory
@@ -94,11 +108,12 @@ if __name__ == '__main__':
     TRAIN_SET_FILE_DIR = r"\train_audio"
 
     # Load the metadata file
-    metadata_df, num_classes = load_metadata(r"../../data/local_subset.csv")
+    # metadata_df, num_classes = load_metadata(r"../../data/local_subset.csv")
+    metadata_df, num_classes = load_metadata(r"../../data/local_subset_stratified.csv")
 
     # Create a custom dataset object
     augmentations = AugmentMelSpectrogram()
-    bird_dataset = BirdDataset(metadata_df, DATASET_BASE_FILE_PATH + TRAIN_SET_FILE_DIR, num_classes=num_classes, transform=augmentations or None)
+    bird_dataset = BirdDataset(metadata_df, DATASET_BASE_FILE_PATH + TRAIN_SET_FILE_DIR, num_classes=num_classes, transform=augmentations, efficientnet=True)
 
     # Split the dataset into train and validation sets
     train_ratio = 0.8
@@ -117,15 +132,18 @@ if __name__ == '__main__':
     print("Running on device: {}".format(device))
 
     # Initialize the model
-    #model = ImprovedCustomCNN(num_classes).to(device)
-    model = PretrainedBirdClassifier(num_classes).to(device)
+    model = PretrainedEfficientNetBirdClassifier(num_classes).to(device)
     print(model)
+    number_trainable_params(model)
 
     # Initialize the model weights
     model.apply(init_weights)
 
     # Define the loss function and the optimizer
-    criterion = nn.BCELoss()
+    # criterion = nn.BCELoss()
+    # FIXME: New loss does not need Sigmoid/softmax?
+    criterion = nn.CrossEntropyLoss()
+
     optimizer = optim.Adam(model.parameters(), lr=0.001)
 
     # Train the model
