@@ -11,14 +11,14 @@ np.random.seed(42)
 
 def truncate_or_fill(input_waveform: np.ndarray, samplerate: int, target_waveform_duration: float) -> np.ndarray:
     """
-    :param input_waveform: np.ndarray, the alraedy loaed waveform as a numpy array.
+    :param input_waveform: np.ndarray, the alraedy loaded waveform as a numpy array.
     :param samplerate: int, the sample rate of the waveform.
     :param target_waveform_duration: float, the duration all waveforms should have.
 
     :return truncated_waveform or filled_waveform: np.ndarray, the truncated or filled waveform.
 
     Either truncates the wavefrom when it is longer than the target duration or fills the waveform if it is shorter.
-    Filling is done by repating the waveform.
+    Filling is done by repeating the waveform.
     """
     target_waveform_length = target_waveform_duration * samplerate
 
@@ -38,7 +38,7 @@ def truncate_or_fill(input_waveform: np.ndarray, samplerate: int, target_wavefor
 
 def _add_gaussian_noise(input_waveform: np.ndarray, samplerate: int) -> np.ndarray:
     """
-    :param input_waveform: np.ndarray, the already loaed waveform as a numpy array.
+    :param input_waveform: np.ndarray, the already loaded waveform as a numpy array.
     :param samplerate: int, the sample rate of the waveform.
 
     :return transformed_wav: np.ndarray, the transfomred waveform.
@@ -55,7 +55,7 @@ def _add_gaussian_noise(input_waveform: np.ndarray, samplerate: int) -> np.ndarr
 
 def _pitch_shift(input_waveform: np.ndarray, samplerate: int) -> np.ndarray:
     """
-    :param input_waveform: np.ndarray, the already loaed waveform as a numpy array.
+    :param input_waveform: np.ndarray, the already loaded waveform as a numpy array.
     :param samplerate: int, the sample rate of the waveform.
 
     :return transformed_wav: np.ndarray, the transfomred waveform.
@@ -72,7 +72,7 @@ def _pitch_shift(input_waveform: np.ndarray, samplerate: int) -> np.ndarray:
 
 def _reverse(input_waveform: np.ndarray, samplerate: int) -> np.ndarray:
     """
-    :param input_waveform: np.ndarray, the already loaed waveform as a numpy array.
+    :param input_waveform: np.ndarray, the already loaded waveform as a numpy array.
     :param samplerate: int, the sample rate of the waveform.
 
     :return transformed_wav: np.ndarray, the transfomred waveform.
@@ -89,7 +89,7 @@ def _reverse(input_waveform: np.ndarray, samplerate: int) -> np.ndarray:
 
 def _shift(input_waveform: np.ndarray, samplerate: int) -> np.ndarray:
     """
-    :param input_waveform: np.ndarray, the already loaed waveform as a numpy array.
+    :param input_waveform: np.ndarray, the already loaded waveform as a numpy array.
     :param samplerate: int, the sample rate of the waveform.
 
     :return transformed_wav: np.ndarray, the transfomred waveform.
@@ -106,7 +106,7 @@ def _shift(input_waveform: np.ndarray, samplerate: int) -> np.ndarray:
 
 def _time_stretch(input_waveform: np.ndarray, samplerate: int) -> np.ndarray:
     """
-    :param input_waveform: np.ndarray, the already loaed waveform as a numpy array.
+    :param input_waveform: np.ndarray, the already loaded waveform as a numpy array.
     :param samplerate: int, the sample rate of the waveform.
 
     :return transformed_wav: np.ndarray, the transfomred waveform.
@@ -123,7 +123,7 @@ def _time_stretch(input_waveform: np.ndarray, samplerate: int) -> np.ndarray:
 
 def _shift_in_time(input_waveform: np.ndarray, samplerate: int) -> np.ndarray:
     """
-    :param input_waveform: np.ndarray, the already loaed waveform as a numpy array.
+    :param input_waveform: np.ndarray, the already loaded waveform as a numpy array.
     :param samplerate: int, the sample rate of the waveform.
 
     :return transformed_wav: np.ndarray, the transfomred waveform.
