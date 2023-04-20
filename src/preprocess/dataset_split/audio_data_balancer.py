@@ -99,26 +99,29 @@ class AudioDataBalancer:
             filename = target_dir_class + "\\" + source_files[file_indice].split('.')[0]
             orig_filename_waveform_sample_rate[filename] = [wav, samplerate, processed_wav]
 
-        while missing_samples > 0:
-            for file in orig_filename_waveform_sample_rate:
-                # TODO: Augmentation following some strategy, not only random
-                random_aug_method = random.choice(list(preprocess.available_functions))
-                processed_wav = preprocess.available_functions[random_aug_method](orig_filename_waveform_sample_rate[file][0], 
-                                                                                     orig_filename_waveform_sample_rate[file][1])
-                aug_filename = file + "_" + random_aug_method
-                augmented_filename_waveform_sample_rate[aug_filename] = [orig_filename_waveform_sample_rate[file][0], 
-                                                                         orig_filename_waveform_sample_rate[file][1], 
-                                                                         processed_wav]
-                
-                missing_samples -= 1
+        for file in orig_filename_waveform_sample_rate:
+            # TODO: Augmentation following some strategy, not only random
+            random_aug_method = random.choice(list(preprocess.available_functions))
+            processed_wav = preprocess.available_functions[random_aug_method](orig_filename_waveform_sample_rate[file][0], 
+                                                                                    orig_filename_waveform_sample_rate[file][1])
+            processed_andtruncated_wav = preprocess.truncate_or_fill(processed_wav, samplerate, self.target_wav_duration)
+            
+            aug_filename = file + "_" + random_aug_method
+            augmented_filename_waveform_sample_rate[aug_filename] = [orig_filename_waveform_sample_rate[file][0], 
+                                                                        orig_filename_waveform_sample_rate[file][1], 
+                                                                        processed_andtruncated_wav]
+            
+            missing_samples -= 1
+            if missing_samples <= 0:
+                break
 
         for filename in orig_filename_waveform_sample_rate:
             sf.write(filename + '.ogg', orig_filename_waveform_sample_rate[filename][2], 
                      orig_filename_waveform_sample_rate[filename][1], format='ogg', subtype='vorbis')
 
-        for filename in augmented_filename_waveform_sample_rate: 
+        for filename in augmented_filename_waveform_sample_rate:
             sf.write(filename + '.ogg', augmented_filename_waveform_sample_rate[filename][2], 
-                     augmented_filename_waveform_sample_rate[filename][1], format='ogg', subtype='vorbis')
+                    augmented_filename_waveform_sample_rate[filename][1], format='ogg', subtype='vorbis')
 
 
     def balance_dataset(self, direct_class_dist: dict=None):
@@ -132,8 +135,9 @@ class AudioDataBalancer:
             self.class_dist = direct_class_dist
         self._create_dirs_for_balanced_data()
         
-        for bird_class in self.class_dist:
-            print(bird_class)
+        key_list = list(self.class_dist.keys())
+        for index, bird_class in enumerate(key_list):
+            print(bird_class, index, len(self.class_dist))
             if self.class_dist[bird_class] >= self.target_sample_size:
                 self._preprocess_from_oversampled_classes(bird_class)
             else:

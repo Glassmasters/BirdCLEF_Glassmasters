@@ -3,6 +3,13 @@ import numpy as np
 
 
 def plot_waveforms(orig_wav: np.ndarray, transformed_wav: np.ndarray):
+    """
+    :param orig_wav: np.ndarray, the orignal waveform.
+    :param transformed_wav: np.ndarray, the transformed waveform.
+
+    Plots the original waveform and the transformed waveform side by side.
+    """
+
     assert orig_wav.shape[0] == transformed_wav.shape[0]
     x_axis_points = [x for x in range(len(orig_wav))]
     plt.subplot(1, 2, 1)
