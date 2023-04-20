@@ -1,24 +1,40 @@
-import torch
+import os
 import soundfile as sf
+import torch
+from typing import List
 
 
-def load_audio_waveform(file_path: str):
+def load_audio_waveform_from_folder(root_folder: str) -> List[torch.Tensor]:
     """
-    Load an audio waveform from a file.
+    Load audio waveforms from a folder of folders of .ogg files and split them into 5-second clips.
 
     Parameters:
-        - file_path: str, the path to the audio file.
+        - root_folder: str, the path to the root folder.
 
     Returns:
-        - audio_data: torch.Tensor, the audio waveform as a PyTorch tensor.
+        - audio_clips: List[torch.Tensor], a list of audio clips as PyTorch tensors.
     """
-    # Load the audio waveform using PySoundFile
-    audio_data, _ = sf.read(file_path, dtype='float32')
+    audio_clips = []
+    for subdir, dirs, files in os.walk(root_folder):
+        for file in files:
+            if file.endswith('.ogg'):
+                file_path = os.path.join(subdir, file)
+                # Load the audio waveform using PySoundFile
+                audio_data, sample_rate = sf.read(file_path, dtype='float32')
 
-    # Convert the audio waveform to a PyTorch tensor
-    audio_data = torch.from_numpy(audio_data)
+                # Calculate the duration of the audio clip in seconds
+                audio_duration = audio_data.shape[0] / sample_rate
 
-    return audio_data
+                # Split the audio waveform into 5-second clips
+                clip_duration = 5
+                num_clips = int(audio_duration / clip_duration)
+                for i in range(num_clips):
+                    start = i * clip_duration * sample_rate
+                    end = (i + 1) * clip_duration * sample_rate
+                    audio_clip = torch.from_numpy(audio_data[start:end])
+                    audio_clips.append(audio_clip)
+
+    return audio_clips
 
 
 def audio_waveform_maximum(audio_data: torch.Tensor) -> float:
