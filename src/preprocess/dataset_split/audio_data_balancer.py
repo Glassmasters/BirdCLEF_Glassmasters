@@ -167,7 +167,6 @@ class AudioDataBalancer:
         self._create_balanced_data_distribution_csv()
 
 
-
     def get_class_dist_from_metadata(self, metadata_filepath: str, class_column: str):
         """
         :param metadata_filepath: str, filepath to the metadata file.
