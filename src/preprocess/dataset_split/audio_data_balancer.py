@@ -129,6 +129,8 @@ class AudioDataBalancer:
                                                                             processed_andtruncated_wav]
                 
                 missing_samples -= 1
+                if missing_samples <= 0:
+                    break
 
         for filename in orig_filename_waveform_sample_rate:
             sf.write(filename + '.ogg', orig_filename_waveform_sample_rate[filename][2], 
