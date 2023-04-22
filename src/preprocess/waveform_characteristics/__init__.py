@@ -1,190 +1,105 @@
-import numpy as np
 import pandas as pd
-from sklearn.neighbors import KNeighborsClassifier
-import os
-import soundfile as sf
-import torch
-import random as rand
-from typing import List
+import torch.nn as nn
+import torch.optim as optim
+from torch.utils.data import DataLoader
+
+from characteristics import audio_waveform_maximum, audio_waveform_minimum, audio_waveform_mean, audio_waveform_std, \
+    load_audio_waveform_from_folder
+from models.knn import KNN
+from models.linearregression import LinearRegressionModel
 
 
-# TODO: Only load 50 files for now, but we should load all of them
-
-def load_audio_waveform_from_folder(root_folder: str):
+def load_into_list(audio_datas):
     """
-    Load audio waveforms from a folder of folders of .ogg files and split them into 5-second clips.
 
-    Parameters:
-        - root_folder: str, the path to the root folder.
+    Args:
+        audio_datas: list of tuples, where each tuple contains the audio waveform and the label.
 
-    Yields:
-        - audio_clip: torch.Tensor, an audio clip as a PyTorch tensor.
+    Returns: audio_characteristics: list of lists, where each list contains the audio characteristics of the audio
+    Returns: y: list of labels
+
     """
-    df: pd.DataFrame = pd.read_csv('../../birdclef-2023/train_metadata.csv')
-    random_ints = []
-    for i in range(50):
-        random_ints.append(rand.randint(0, len(df)))
-    file_path = df["filename"].tolist()
-    for j in random_ints:
-        print(file_path[j])
-        audio_data, sample_rate = sf.read("/home/meri/Documents/GitHub/BirdCLEF_Glassmasters/src/birdclef-2023"
-                                          "/train_audio/" + file_path[j], dtype='float32')
-        # Calculate the duration of the audio clip in seconds
-        audio_duration = audio_data.shape[0] / sample_rate
-        # Split the audio waveform into 5-second clips
-        clip_duration = 5
-        num_clips = int(audio_duration / clip_duration)
-        for i in range(num_clips):
-            start = i * clip_duration * sample_rate
-            end = (i + 1) * clip_duration * sample_rate
-            audio_clip = torch.from_numpy(audio_data[start:end])
-            yield audio_clip
-            del audio_clip
+    audio_characteristics = []
+    y = []
+    for audio_data in audio_datas:
+        audio_characteristics.append([audio_waveform_maximum(audio_data[0]),
+                                      audio_waveform_minimum(audio_data[0]),
+                                      audio_waveform_mean(audio_data[0]),
+                                      audio_waveform_std(audio_data[0])])
+        y.append(audio_data[1])
         del audio_data
+    return audio_characteristics, y
 
 
-def audio_waveform_maximum(audio_data: torch.Tensor) -> float:
-    """
-    Args:
-        audio_data: torch.Tensor, shape (N,), where N is the number of samples in the audio waveform.
-
-    Returns: max_value: float, the maximum value of the audio waveform.
-
-    """
-    max_value = torch.max(torch.abs(audio_data))
-    return max_value.item()
-
-
-def audio_waveform_minimum(audio_data: torch.Tensor) -> float:
-    """
-    Args:
-        audio_data: torch.Tensor, shape (N,), where N is the number of samples in the audio waveform.
-
-    Returns: min_value: float, the minimum value of the audio waveform.
-
-    """
-    min_value = torch.min(torch.abs(audio_data))
-    return min_value.item()
-
-
-def audio_waveform_mean(audio_data: torch.Tensor) -> float:
-    """
-    Args:
-        audio_data: torch.Tensor, shape (N,), where N is the number of samples in the audio waveform.
-
-    Returns: mean_value: float, the mean value of the audio waveform.
-
-    """
-    mean_value = torch.mean(torch.abs(audio_data))
-    return mean_value.item()
-
-
-def audio_waveform_std(audio_data: torch.Tensor) -> float:
-    """
-    Args:
-        audio_data: torch.Tensor, shape (N,), where N is the number of samples in the audio waveform.
-
-    Returns: std_value: float, the standard deviation value of the audio waveform.
-
-    """
-    std_value = torch.std(audio_data)
-    return std_value.item()
-
-
-def audio_waveform_percentile(audio_data: torch.Tensor, percentile: int) -> float:
-    """
-    Args:
-        audio_data: torch.Tensor, shape (N,), where N is the number of samples in the audio waveform.
-        percentile: int, the percentile to calculate.
-
-    Returns: percentile_value: float, the percentile value of the audio waveform.
-
-    """
-    percentile_value = torch.quantile(audio_data, percentile / 100)
-    return percentile_value.item()
-
-
-def audio_waveform_to_db(audio_data: torch.Tensor) -> torch.Tensor:
-    """
-    Args:
-        audio_data: torch.Tensor, shape (N,), where N is the number of samples in the audio waveform.
-
-    Returns: db_value: torch.Tensor, the audio waveform in decibels.
-
-    """
-    db_value = 20 * torch.log10(torch.abs(audio_data) + 1e-6)
-    return db_value
-
-
-def audio_waveform_fft(audio_data: torch.Tensor) -> torch.Tensor:
-    """
-    Args:
-        audio_data: torch.Tensor, shape (N,), where N is the number of samples in the audio waveform.
-
-    Returns: fft_value: torch.Tensor, the audio waveform in the frequency domain.
-
-    """
-    fft_value = torch.fft.fft(audio_data)
-    return fft_value
-
-
-def audio_waveform_envelope(audio_data: torch.Tensor) -> torch.Tensor:
-    """
-    Args:
-        audio_data: torch.Tensor, shape (N,), where N is the number of samples in the audio waveform.
-
-    Returns: envelope_value: torch.Tensor, the audio waveform envelope.
-
-    """
-    envelope_value = torch.abs(audio_data)
-    return envelope_value
-
-
-class KNN:
-    def __init__(self, n_neighbors=5):
-        self.model = KNeighborsClassifier(n_neighbors=n_neighbors)
-
-    def fit(self, X, y):
-        # Convert singleton array to 1D array
-        if y.ndim == 0:
-            y = np.array([y])
-        self.model.fit(X, y)
-
-    def predict(self, X):
-        return self.model.predict(X)
-
-    def score(self, X, y):
-        return self.model.score(X, y)
-
-
-if __name__ == '__main__':
-    # Print cwd
-    print(os.getcwd())
-
+def train_fit_predict_knn():
     # Load audio waveform data
     print("Loading audio waveform data...")
-    path = "../../birdclef-2023/train_audio"
+    path = "../../birdclef-2023/train_metadata.csv"
     audio_datas = load_audio_waveform_from_folder(path)
-    test_data = load_audio_waveform_from_folder("../../birdclef-2023/test_soundscapes/")
+    test_data = load_audio_waveform_from_folder('/home/meri/Documents/GitHub/BirdCLEF_Glassmasters/data/test_metadata'
+                                                '.csv')
 
     # Extract audio characteristics
     print("Extracting audio characteristics...")
-    audio_characteristics = []
-    for audio_data in audio_datas:
-        audio_characteristics.append([audio_waveform_maximum(audio_data),
-                                      audio_waveform_minimum(audio_data),
-                                      audio_waveform_mean(audio_data),
-                                      audio_waveform_std(audio_data)])
-        del audio_data
-
+    audio_characteristics, y = load_into_list(audio_datas)
     # Fit model and evaluate performance
     print("Fitting model and evaluating performance...")
     knn = KNN()
-    knn.fit(audio_characteristics, "class")
-    score_before = knn.score(audio_characteristics, "class")
-    print(f"Model score before fitting: {score_before}")
-    knn.predict(audio_characteristics[0])
-    knn.score(audio_characteristics, "class")
-    score_after = knn.score(audio_characteristics, "class")
-    print(f"Model score after fitting: {score_after}")
-    print(f"Difference in score: {score_after - score_before}")
+    knn.fit(audio_characteristics, y)
+    print("Extracting test audio characteristics...")
+    test_characteristics, test_predict = load_into_list(test_data)
+    y_pred = knn.predict(test_characteristics).tolist()
+    num_correct = 0
+    for i in range(len(test_predict)):
+        if y_pred[i] == test_predict[i]:
+            num_correct += 1
+    # Print results
+    print(f"Number of correct predictions: {num_correct}/{len(test_predict)}")
+    # print score
+    print(f"Model score after fitting: {knn.score(test_characteristics, test_predict)}")
+
+
+def train_fit_predict_linear_regression():
+    # Load audio waveform data
+    print("Loading audio waveform data...")
+    path = "../../birdclef-2023/train_metadata.csv"
+    audio_datas = load_audio_waveform_from_folder(path)
+    test_data = load_audio_waveform_from_folder(
+        '/home/meri/Documents/GitHub/BirdCLEF_Glassmasters/data/test_metadata.csv')
+    species = \
+    pd.read_csv("/home/meri/Documents/GitHub/BirdCLEF_Glassmasters/src/birdclef-2023/eBird_Taxonomy_v2021.csv")[
+        "SPECIES_CODE"].tolist()
+
+    # Create dictionary to map species to indicator values
+    species_dict = {species[i]: i for i in range(len(species))}
+    # Extract audio characteristics
+    print("Extracting audio characteristics...")
+    audio_characteristics, y = load_into_list(audio_datas)
+
+    # Replace species in target variable with indicator values
+    y = [species_dict[val] for val in y]
+    print(y)
+    # Fit model and evaluate performance
+    print("Fitting model and evaluating performance...")
+    linear_regression = LinearRegressionModel()
+    linear_regression.fit(audio_characteristics, y)
+
+    print("Extracting test audio characteristics...")
+    test_characteristics, y_test = load_into_list(test_data)
+    # Replace species in target variable with indicator values
+    y_test = [species_dict[val] for val in y_test]
+    y_pred = list(map(int, linear_regression.predict(test_characteristics)))
+    print(y_pred)
+    print(y_test)
+    # Count number of correct predictions
+    num_correct = 0
+    for i in range(len(y_test)):
+        if y_pred[i] == y_test[i]:
+            num_correct += 1
+    # Print results
+    print(f"Model score after fitting: {linear_regression.score(test_characteristics, y_test)}")
+    print(f"Number of correct predictions: {num_correct}/{len(y_test)}")
+
+
+if __name__ == '__main__':
+    train_fit_predict_knn()

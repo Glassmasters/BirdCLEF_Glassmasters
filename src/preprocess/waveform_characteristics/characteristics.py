@@ -1,40 +1,42 @@
-import os
+import pandas as pd
 import soundfile as sf
 import torch
-from typing import List
+import random as rand
 
 
-def load_audio_waveform_from_folder(root_folder: str) -> List[torch.Tensor]:
+def load_audio_waveform_from_folder(root_folder: str):
     """
     Load audio waveforms from a folder of folders of .ogg files and split them into 5-second clips.
 
     Parameters:
-        - root_folder: str, the path to the root folder.
+        - root_folder: str, the path to the root folder.â
 
-    Returns:
-        - audio_clips: List[torch.Tensor], a list of audio clips as PyTorch tensors.
+    Yields:
+        - audio_clip: torch.Tensor, an audio clip as a PyTorch tensor.
     """
-    audio_clips = []
-    for subdir, dirs, files in os.walk(root_folder):
-        for file in files:
-            if file.endswith('.ogg'):
-                file_path = os.path.join(subdir, file)
-                # Load the audio waveform using PySoundFile
-                audio_data, sample_rate = sf.read(file_path, dtype='float32')
-
-                # Calculate the duration of the audio clip in seconds
-                audio_duration = audio_data.shape[0] / sample_rate
-
-                # Split the audio waveform into 5-second clips
-                clip_duration = 5
-                num_clips = int(audio_duration / clip_duration)
-                for i in range(num_clips):
-                    start = i * clip_duration * sample_rate
-                    end = (i + 1) * clip_duration * sample_rate
-                    audio_clip = torch.from_numpy(audio_data[start:end])
-                    audio_clips.append(audio_clip)
-
-    return audio_clips
+    df: pd.DataFrame = pd.read_csv(root_folder)
+    file_path = df["filename"].tolist()
+    species = df["primary_label"].tolist()
+    random_ints = []
+    for i in range(df.shape[0]):
+        random_ints.append(rand.randint(0, len(df) - 1))
+    selected_species = []
+    for j in random_ints:
+        selected_species = species[j]
+        audio_data, sample_rate = sf.read("/home/meri/Documents/GitHub/BirdCLEF_Glassmasters/src/birdclef-2023"
+                                          "/train_audio/" + file_path[j], dtype='float32')
+        # Calculate the duration of the audio clip in seconds
+        audio_duration = audio_data.shape[0] / sample_rate
+        # Split the audio waveform into 5-second clips
+        clip_duration = 5
+        num_clips = int(audio_duration / clip_duration)
+        for i in range(num_clips):
+            start = i * clip_duration * sample_rate
+            end = (i + 1) * clip_duration * sample_rate
+            audio_clip = torch.from_numpy(audio_data[start:end])
+            yield audio_clip, selected_species
+            del audio_clip
+        del audio_data
 
 
 def audio_waveform_maximum(audio_data: torch.Tensor) -> float:
