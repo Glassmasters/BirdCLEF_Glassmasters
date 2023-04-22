@@ -33,7 +33,7 @@ class AudioDataBalancer:
 
     Attributes
     ----------
-    class_dist: dict, the dictionary which holds the samples per class.
+    class_dist: dict, the dictionary which holds the initial samples per class.
     """
     def __init__(self,
                  target_sample_size: int = None,
@@ -47,6 +47,9 @@ class AudioDataBalancer:
         self.filepath_orig_data = filepath_orig_data
         self.target_dir_balanced_data = target_dir_balanced_data
         self.target_waveform_duration = target_waveform_duration
+        self.output_class_distribution = {"primary_label": [],
+                                          "filename": []}
+
 
     def _create_dirs_for_balanced_data(self):
         """
@@ -59,6 +62,17 @@ class AudioDataBalancer:
             class_dir = os.path.join(DATASET_BASE_FILE_PATH + TARGET_DIR + "\\" + str(key))
             if not os.path.exists(class_dir):
                 os.makedirs(class_dir)
+
+
+    def _create_balanced_data_distribution_csv(self):
+        """
+        Creates a datafraem from the output_class_distribution dictionary and
+        writes it to a csv file.
+        """
+        output_classes_dist_df = pd.DataFrame(data=self.output_class_distribution)
+        csv_filepath = DATASET_BASE_FILE_PATH + "\\output_classes_distribution.csv"
+        output_classes_dist_df.to_csv(csv_filepath, index=False)
+
 
     def _preprocess_from_oversampled_classes(self, single_class_name: str):
         """
@@ -76,6 +90,8 @@ class AudioDataBalancer:
             wav, samplerate = _load_waveform(source_dir_class + "\\" + source_files[file_indice])
             processed_wav = preprocess.truncate_or_fill(wav, samplerate, self.target_wav_duration)
             sf.write(target_dir_class + "\\" + source_files[file_indice], processed_wav, samplerate, format='ogg', subtype='vorbis')
+            self.output_class_distribution["primary_label"].append(single_class_name)
+            self.output_class_distribution["filename"].append(single_class_name + "/" + source_files[file_indice])
 
 
     def _preprocess_for_undersampled_classes(self, single_class_name: str):
@@ -99,29 +115,34 @@ class AudioDataBalancer:
             filename = target_dir_class + "\\" + source_files[file_indice].split('.')[0]
             orig_filename_waveform_sample_rate[filename] = [wav, samplerate, processed_wav]
 
-        for file in orig_filename_waveform_sample_rate:
-            # TODO: Augmentation following some strategy, not only random
-            random_aug_method = random.choice(list(preprocess.available_functions))
-            processed_wav = preprocess.available_functions[random_aug_method](orig_filename_waveform_sample_rate[file][0], 
-                                                                                    orig_filename_waveform_sample_rate[file][1])
-            processed_andtruncated_wav = preprocess.truncate_or_fill(processed_wav, samplerate, self.target_wav_duration)
-            
-            aug_filename = file + "_" + random_aug_method
-            augmented_filename_waveform_sample_rate[aug_filename] = [orig_filename_waveform_sample_rate[file][0], 
-                                                                        orig_filename_waveform_sample_rate[file][1], 
-                                                                        processed_andtruncated_wav]
-            
-            missing_samples -= 1
-            if missing_samples <= 0:
-                break
+        while missing_samples > 0:
+            for file in orig_filename_waveform_sample_rate:
+                # TODO: Augmentation following some strategy, not only random
+                random_aug_method = random.choice(list(preprocess.available_functions))
+                processed_wav = preprocess.available_functions[random_aug_method](orig_filename_waveform_sample_rate[file][0], 
+                                                                                        orig_filename_waveform_sample_rate[file][1])
+                processed_andtruncated_wav = preprocess.truncate_or_fill(processed_wav, samplerate, self.target_wav_duration)
+                
+                aug_filename = file + "_" + random_aug_method + "_" + str(missing_samples)
+                augmented_filename_waveform_sample_rate[aug_filename] = [orig_filename_waveform_sample_rate[file][0], 
+                                                                            orig_filename_waveform_sample_rate[file][1], 
+                                                                            processed_andtruncated_wav]
+                
+                missing_samples -= 1
+                if missing_samples <= 0:
+                    break
 
         for filename in orig_filename_waveform_sample_rate:
             sf.write(filename + '.ogg', orig_filename_waveform_sample_rate[filename][2], 
                      orig_filename_waveform_sample_rate[filename][1], format='ogg', subtype='vorbis')
+            self.output_class_distribution["primary_label"].append(single_class_name)
+            self.output_class_distribution["filename"].append(single_class_name + "/" + filename.split("\\")[-1] + '.ogg')
 
         for filename in augmented_filename_waveform_sample_rate:
             sf.write(filename + '.ogg', augmented_filename_waveform_sample_rate[filename][2], 
                     augmented_filename_waveform_sample_rate[filename][1], format='ogg', subtype='vorbis')
+            self.output_class_distribution["primary_label"].append(single_class_name)
+            self.output_class_distribution["filename"].append(single_class_name + "/" + filename.split("\\")[-1] + '.ogg')
 
 
     def balance_dataset(self, direct_class_dist: dict=None):
@@ -143,6 +164,7 @@ class AudioDataBalancer:
             else:
                 self._preprocess_for_undersampled_classes(bird_class)
 
+        self._create_balanced_data_distribution_csv()
 
 
     def get_class_dist_from_metadata(self, metadata_filepath: str, class_column: str):
@@ -164,13 +186,13 @@ class AudioDataBalancer:
 
 
 if __name__ == "__main__":
-    # example on hwo to use it
+    # example on how to use it
     DATASET_BASE_FILE_PATH = r"D:\Datasets\birdclef-2023"
     TRAIN_SET_FILE_DIR = r"\train_audio"
     TARGET_DIR = r"\train_audio_balanced"
     metadata_file = os.path.join(DATASET_BASE_FILE_PATH + r"\train_metadata.csv")
 
-    audio_balancer = AudioDataBalancer(target_sample_size=50,
+    audio_balancer = AudioDataBalancer(target_sample_size=200,
                                        target_wav_duration=5,
                                        target_dir_balanced_data = os.path.join(DATASET_BASE_FILE_PATH + TARGET_DIR)
                                        )
