@@ -27,7 +27,7 @@ def pad_or_truncate(mel_spectrogram, length):
     return mel_spectrogram
 
 
-def split_audio(mel_spectrogram_full, segment_length=5, sample_rate=32000, n_fft=2048):
+def split_audio(mel_spectrogram_full, segment_length=5, sample_rate=32_000, n_fft=2048):
     num_frames = mel_spectrogram_full.shape[2]
     duration = num_frames * (n_fft // 2) / sample_rate  # Doc correct?
     segments = []
@@ -107,8 +107,8 @@ class BirdDataset(Dataset):
 
         one_hot_label = self.label_to_onehot(primary_label, self.num_classes)
 
-        # from src.plotting.plot_mel_spectogram import plot_mel_spectrogram
-        # plot_mel_spectrogram(mel_spectrogram)
+        #from src.plotting.plot_mel_spectogram import plot_mel_spectrogram
+        #plot_mel_spectrogram(mel_spectrogram)
 
         # Normalize the mel spectrogram
         # mel_spectrogram = (mel_spectrogram - mel_spectrogram.mean()) / mel_spectrogram.std()

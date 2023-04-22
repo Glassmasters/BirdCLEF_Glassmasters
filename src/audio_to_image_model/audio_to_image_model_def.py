@@ -219,7 +219,7 @@ class PretrainedEfficientNetBirdClassifier(nn.Module):
         # Set the requires_grad attribute based on the fine_tune_last_blocks parameter
         for name, param in self.base_model.named_parameters():
             if fine_tune_last_blocks:
-                # Fine-tune the last two stages (blocks 5 and 6)
+                # Fine-tune the last two stages (blocks 6 and 7)
                 if any(s in name for s in ["features.6.", "features.7."]):
                     param.requires_grad = True
                 else:
@@ -232,7 +232,7 @@ class PretrainedEfficientNetBirdClassifier(nn.Module):
 
         # Replace the last fully connected layer for bird species classification
         num_features = self.base_model.classifier[1].in_features
-
+        # TODO: Remove custom head/remove transfer learning
         self.base_model.classifier = nn.Sequential(
             nn.Linear(num_features, 2048),
             nn.BatchNorm1d(2048),
