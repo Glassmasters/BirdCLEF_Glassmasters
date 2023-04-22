@@ -39,36 +39,33 @@ def predict(model, audio_segments, device):
     return np.array(predictions)
 
 
-def generate_csv(predictions, threshold, row_id_prefix, label_to_bird_map):
-    result_rows = []
-
-    for i, pred in enumerate(predictions):
-        print(f"Prediction {i}: {pred}")
-        max_index = np.argmax(pred[0])
-        # birds_present = {label_to_bird_map[index]: 1 if p >= threshold else 0 for index, p in enumerate(pred[0])}
-        birds_present = {label_to_bird_map[index]: 1 if index == max_index else 0 for index, p in enumerate(pred[0])}
-        row_id = f"{row_id_prefix}_{i * 5 + 5}"
-        result_rows.append([row_id] + list(birds_present.values()))
-
-    # Change the column names to bird names
-    column_names = ['row_id'] + [label_to_bird_map[i] for i in range(0, len(label_to_bird_map))]
-    result_df = pd.DataFrame(result_rows, columns=column_names)
-    return result_df
-
-
 # def generate_csv(predictions, threshold, row_id_prefix, label_to_bird_map):
 #    result_rows = []
 #    for i, pred in enumerate(predictions):
-#        print(f"Prediction {i}: {pred}")
+#        #print(f"Prediction {i}: {pred}")
 #        max_index = np.argmax(pred[0])
-#        birds_present = {label_to_bird_map[index]: pred[0][index] for index, p in enumerate(pred[0])}
+#        # birds_present = {label_to_bird_map[index]: 1 if p >= threshold else 0 for index, p in enumerate(pred[0])}
+#        birds_present = {label_to_bird_map[index]: 1 if index == max_index else 0 for index, p in enumerate(pred[0])}
 #        row_id = f"{row_id_prefix}_{i * 5 + 5}"
 #        result_rows.append([row_id] + list(birds_present.values()))
-#
 #    # Change the column names to bird names
 #    column_names = ['row_id'] + [label_to_bird_map[i] for i in range(0, len(label_to_bird_map))]
 #    result_df = pd.DataFrame(result_rows, columns=column_names)
 #    return result_df
+
+
+def generate_csv(predictions, threshold, row_id_prefix, label_to_bird_map):
+    result_rows = []
+    for i, pred in enumerate(predictions):
+        # print(f"Prediction {i}: {pred}")
+        max_index = np.argmax(pred[0])
+        birds_present = {label_to_bird_map[index]: pred[0][index] for index, p in enumerate(pred[0])}
+        row_id = f"{row_id_prefix}_{i * 5 + 5}"
+        result_rows.append([row_id] + list(birds_present.values()))
+    # Change the column names to bird names
+    column_names = ['row_id'] + [label_to_bird_map[i] for i in range(0, len(label_to_bird_map))]
+    result_df = pd.DataFrame(result_rows, columns=column_names)
+    return result_df
 
 
 def inference(audio_path, model, label_to_bird_map, threshold=0.5017, device='cpu'):
@@ -87,7 +84,8 @@ def inference(audio_path, model, label_to_bird_map, threshold=0.5017, device='cp
 
 if __name__ == '__main__':
     # Set parameters here
-    TEST_FOLDER_PATH = r"D:\kaggle_competition\birdclef-2023\test_soundscapes"
+    #TEST_FOLDER_PATH = r"D:\kaggle_competition\birdclef-2023\test_soundscapes"
+    TEST_FOLDER_PATH = r"C:\Users\phili\Projects\pythonProjects\BirdCLEF_Glassmasters\tests\test_audio_files"
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
     # Load your model and preprocessing function here

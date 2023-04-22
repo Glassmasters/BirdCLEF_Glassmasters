@@ -44,7 +44,7 @@ def create_mixed_audio(metadata, unique_classes, mix_length=600, segment_length=
         audio = audio[:segment_length * 1000]
         mix_audio = mix_audio.overlay(audio, position=start_time * 1000)
 
-        one_hot_encoded = [float(cls == audio_class) for cls in unique_classes]
+        one_hot_encoded = [int(cls == audio_class) for cls in unique_classes]
         mix_data.append(
             {'row_id': f'{audio_id +1}_10_minute_mixed_audio_{start_time + segment_length:02}', **dict(zip(unique_classes, one_hot_encoded))}
         )

@@ -59,5 +59,4 @@ if __name__ == '__main__':
     submission = pd.read_csv('../src/audio_to_image_model/submission.csv')
 
     solution = pd.read_csv('../tests/test_audio_metadata/all_mixed_audio_classes.csv')
-    solution.loc[:, solution.columns != 'row_id'] = solution.loc[:, solution.columns != 'row_id'].astype('int')
     print(score(solution, submission, "row_id"))

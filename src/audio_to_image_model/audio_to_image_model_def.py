@@ -183,8 +183,7 @@ class PretrainedBirdClassifier(nn.Module):
             nn.Linear(self.base_model.fc.in_features, 2048),
             nn.ReLU(inplace=True),
             nn.Linear(2048, num_classes),
-            # nn.Sigmoid()
-            #nn.Softmax(dim=1)
+            nn.Softmax(dim=1)
         )
 
     def forward(self, x):
