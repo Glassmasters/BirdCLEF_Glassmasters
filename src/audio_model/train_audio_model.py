@@ -86,7 +86,7 @@ if __name__ == '__main__':
     train_dataset, val_dataset = random_split(bird_dataset, [train_size, val_size])
 
     # Create data loaders
-    batch_size = 16
+    batch_size = 64
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
     val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
 
@@ -102,7 +102,7 @@ if __name__ == '__main__':
     # model.apply(init_weights)
 
     # Define the loss function and the optimizer
-    criterion = nn.BCELoss()
+    criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=0.001)
 
     # Train the model
