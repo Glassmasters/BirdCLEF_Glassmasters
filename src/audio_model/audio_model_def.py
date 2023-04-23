@@ -1,6 +1,9 @@
 import torch.nn as nn
 import torch
 
+import tensorflow as tf
+import tensorflow_hub as hub
+
 
 class Custom1dCNN(nn.Module):
     """
@@ -50,3 +53,15 @@ class Custom1dCNN(nn.Module):
         x = self.sigmoid(x)
 
         return x
+    
+
+class Pretrained_Bird_classifier():
+    def __init__(self):
+        self.load_model_from_hub()
+
+
+    def load_model_from_hub(self):
+        pretrained_model_handle = "https://tfhub.dev/google/bird-vocalization-classifier/1"
+        self.pretrained_model = hub.load(pretrained_model_handle)
+
+    

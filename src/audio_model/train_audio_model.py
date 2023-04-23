@@ -62,15 +62,22 @@ def _test(dataloader, model, loss_fn):
             loss = loss_fn(output, target)
             total_loss += loss.item()
 
-        test_loss /= num_batches
-        correct /= size
-        progress_bar.set_description(f"Test Error: \n Accuracy: {(100 * correct):>0.1f}%, Avg loss: {test_loss:>8f} \n")
+            test_loss /= num_batches
+            # Get the predicted class labels
+            pred = output.argmax(dim=1, keepdim=True)
+            # Convert the one-hot encoded target back to class labels
+            target_labels = target.argmax(dim=1, keepdim=True)
+
+            correct += pred.eq(target_labels.view_as(pred)).sum().item()
+
+        print(f"\nTest Loss:{total_loss / size:>8f}  Accuracy: {(100 * correct / size):>0.1f}%\n")
 
 
 if __name__ == '__main__':
     # Define the dataset base path and the train set file directory
     DATASET_BASE_FILE_PATH = r"D:\Datasets\birdclef-2023"
     TRAIN_SET_FILE_DIR = r"\train_audio_balanced"
+    MODEL_WEIGHTS = f"../../models/audio_1d_CNN_model.pth"
 
     # Load the metadata file
     metadata_df, num_classes = load_metadata(DATASET_BASE_FILE_PATH + r"\output_classes_distribution.csv")
@@ -96,6 +103,8 @@ if __name__ == '__main__':
 
     # Initialize the model
     model = Custom1dCNN(num_classes).to(device)
+    if MODEL_WEIGHTS:
+        model.load_state_dict(torch.load(MODEL_WEIGHTS))
     print(model)
 
     # Initialize the model weights
@@ -106,10 +115,14 @@ if __name__ == '__main__':
     optimizer = optim.Adam(model.parameters(), lr=0.001)
 
     # Train the model
-    num_epochs = 10
+    num_epochs = 1
     for epoch in range(num_epochs):
         # Train
         train(train_loader, model, criterion, optimizer, epoch +1, num_epochs)
         # Evaluate on the validation set
         _test(val_loader, model, criterion)
+
+    model_name = "audio_1d_CNN_model.pth"
+    torch.save(model.state_dict(), f"../../models/{model_name}")
+    print(f"Saved PyTorch Model State to {model_name}")
     
