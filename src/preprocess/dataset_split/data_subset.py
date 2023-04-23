@@ -1,7 +1,7 @@
 import pandas as pd
 from sklearn.model_selection import StratifiedShuffleSplit
 
-DATASET_BASE_FILE_PATH = r"D:\kaggle_competition\birdclef-2023"
+DATASET_BASE_FILE_PATH = r"src/birdclef-2023"
 TRAIN_SET_FILE_DIR = r"\train_audio"
 # Load the metadata file
 train_metadata = pd.read_csv("../../../data/train_metadata_subset_balanced.csv")

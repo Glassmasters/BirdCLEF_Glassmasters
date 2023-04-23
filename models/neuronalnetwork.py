@@ -1,62 +1,41 @@
+import torch
 from torch import nn, optim
 from torch.utils.data import DataLoader
+from sklearn.metrics import accuracy_score
 
 
-class AudioClassificationModel(nn.Module):
-    def __init__(self, input_size, hidden_size, num_classes):
-        super(AudioClassificationModel, self).__init__()
-        self.gru = nn.GRU(input_size, hidden_size, num_layers=2, batch_first=True)
-        self.fc1 = nn.Linear(hidden_size, num_classes)
+class NeuronalNetwork:
+    def __init__(self):
+        self.model = nn.Sequential(
+            nn.Linear(4, 2),
+            nn.ReLU(),
+            nn.Linear(2, 1),
+            nn.Sigmoid()
+        )
+        self.loss_function = nn.BCELoss()
+        self.optimizer = optim.Adam(self.model.parameters(), lr=0.001)
 
-    def forward(self, x):
-        # Input shape: (batch_size, sequence_length, input_size)
-        batch_size = x.size(0)
-        sequence_length = x.size(1)
-        input_size = x.size(2)
+    def fit(self, X, y):
+        # Convert inputs to PyTorch tensors
+        X_tensor = torch.tensor(X, dtype=torch.float32)
+        y_tensor = torch.tensor(y, dtype=torch.float32).reshape(-1, 1)
+        # Train the model
+        self.model.train()
+        self.optimizer.zero_grad()
+        y_pred = self.model(X_tensor)
+        loss = self.loss_function(y_pred, y_tensor)
+        loss.backward()
+        self.optimizer.step()
 
-        # Reshape to matrix of shape (batch_size * sequence_length, input_size)
-        x = x.view(batch_size * sequence_length, input_size)
+    def predict(self, X):
+        # Convert inputs to PyTorch tensors
+        X_tensor = torch.tensor(X, dtype=torch.float32)
+        with torch.no_grad():
+            outputs = self.model(X_tensor)
+            predictions = (outputs > 0.5).float()
+        return predictions
 
-        # Pass through GRU
-        _, hidden = self.gru(x)
-
-        # Take last hidden state of second layer
-        hidden = hidden[-1]
-
-        # Pass through fully connected layer
-        out = self.fc1(hidden)
-
-        # Reshape to batch size x num_classes
-        out = out.view(batch_size, -1)
-
-        return out
-
-
-def train_model(model, train_dataset, num_epochs, batch_size, lr):
-    optimizer = optim.Adam(model.parameters(), lr=lr)
-    criterion = nn.CrossEntropyLoss()
-
-    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
-
-    for epoch in range(num_epochs):
-        running_loss = 0.0
-        for i, (audio_clips, labels) in enumerate(train_loader):
-            # Reshape audio clips to fixed size of 160000 samples
-            audio_clips = nn.utils.rnn.pad_sequence(audio_clips, batch_first=True, padding_value=0.0)
-            audio_clips = audio_clips.view(-1, 1, 160000)
-
-            # Zero the parameter gradients
-            optimizer.zero_grad()
-
-            # Forward + backward + optimize
-            outputs = model(audio_clips)
-            loss = criterion(outputs, labels)
-            loss.backward()
-            optimizer.step()
-
-            # Print statistics
-            running_loss += loss.item()
-            if i % 10 == 9:
-                print('[%d, %5d] loss: %.3f' %
-                      (epoch + 1, i + 1, running_loss / 10))
-                running_loss = 0.0
+    def score(self, X, y):
+        predictions = self.predict(X)
+        score = accuracy_score(y, predictions)
+        return score

@@ -1,11 +1,10 @@
 import pandas as pd
-import torch.nn as nn
-import torch.optim as optim
-from torch.utils.data import DataLoader
+
 
 from characteristics import audio_waveform_maximum, audio_waveform_minimum, audio_waveform_mean, audio_waveform_std, \
     load_audio_waveform_from_folder
 from models.knn import KNN
+from models.neuronalnetwork import NeuronalNetwork
 from models.linearregression import LinearRegressionModel
 
 
@@ -31,35 +30,7 @@ def load_into_list(audio_datas):
     return audio_characteristics, y
 
 
-def train_fit_predict_knn():
-    # Load audio waveform data
-    print("Loading audio waveform data...")
-    path = "../../birdclef-2023/train_metadata.csv"
-    audio_datas = load_audio_waveform_from_folder(path)
-    test_data = load_audio_waveform_from_folder('/home/meri/Documents/GitHub/BirdCLEF_Glassmasters/data/test_metadata'
-                                                '.csv')
-
-    # Extract audio characteristics
-    print("Extracting audio characteristics...")
-    audio_characteristics, y = load_into_list(audio_datas)
-    # Fit model and evaluate performance
-    print("Fitting model and evaluating performance...")
-    knn = KNN()
-    knn.fit(audio_characteristics, y)
-    print("Extracting test audio characteristics...")
-    test_characteristics, test_predict = load_into_list(test_data)
-    y_pred = knn.predict(test_characteristics).tolist()
-    num_correct = 0
-    for i in range(len(test_predict)):
-        if y_pred[i] == test_predict[i]:
-            num_correct += 1
-    # Print results
-    print(f"Number of correct predictions: {num_correct}/{len(test_predict)}")
-    # print score
-    print(f"Model score after fitting: {knn.score(test_characteristics, test_predict)}")
-
-
-def train_fit_predict_linear_regression():
+def train_fit_predict(modeltype: str):
     # Load audio waveform data
     print("Loading audio waveform data...")
     path = "../../birdclef-2023/train_metadata.csv"
@@ -67,8 +38,8 @@ def train_fit_predict_linear_regression():
     test_data = load_audio_waveform_from_folder(
         '/home/meri/Documents/GitHub/BirdCLEF_Glassmasters/data/test_metadata.csv')
     species = \
-    pd.read_csv("/home/meri/Documents/GitHub/BirdCLEF_Glassmasters/src/birdclef-2023/eBird_Taxonomy_v2021.csv")[
-        "SPECIES_CODE"].tolist()
+        pd.read_csv("/home/meri/Documents/GitHub/BirdCLEF_Glassmasters/src/birdclef-2023/eBird_Taxonomy_v2021.csv")[
+            "SPECIES_CODE"].tolist()
 
     # Create dictionary to map species to indicator values
     species_dict = {species[i]: i for i in range(len(species))}
@@ -81,14 +52,21 @@ def train_fit_predict_linear_regression():
     print(y)
     # Fit model and evaluate performance
     print("Fitting model and evaluating performance...")
-    linear_regression = LinearRegressionModel()
-    linear_regression.fit(audio_characteristics, y)
+    match modeltype:
+        case "linear":
+            model = LinearRegressionModel()
+        case "knn":
+            model = KNN()
+        case "neuronalnetwork":
+            model = NeuronalNetwork()
+        case _: model = LinearRegressionModel()
 
+    model.fit(audio_characteristics, y)
     print("Extracting test audio characteristics...")
     test_characteristics, y_test = load_into_list(test_data)
     # Replace species in target variable with indicator values
     y_test = [species_dict[val] for val in y_test]
-    y_pred = list(map(int, linear_regression.predict(test_characteristics)))
+    y_pred = list(map(int, model.predict(test_characteristics)))
     print(y_pred)
     print(y_test)
     # Count number of correct predictions
@@ -97,9 +75,9 @@ def train_fit_predict_linear_regression():
         if y_pred[i] == y_test[i]:
             num_correct += 1
     # Print results
-    print(f"Model score after fitting: {linear_regression.score(test_characteristics, y_test)}")
+    print(f"Model score after fitting: {model.score(test_characteristics, y_test)}")
     print(f"Number of correct predictions: {num_correct}/{len(y_test)}")
 
 
 if __name__ == '__main__':
-    train_fit_predict_knn()
+    train_fit_predict("knn")

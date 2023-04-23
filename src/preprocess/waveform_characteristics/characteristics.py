@@ -9,7 +9,7 @@ def load_audio_waveform_from_folder(root_folder: str):
     Load audio waveforms from a folder of folders of .ogg files and split them into 5-second clips.
 
     Parameters:
-        - root_folder: str, the path to the root folder.â
+        - root_folder: str, the path to the root folder.
 
     Yields:
         - audio_clip: torch.Tensor, an audio clip as a PyTorch tensor.
@@ -20,7 +20,6 @@ def load_audio_waveform_from_folder(root_folder: str):
     random_ints = []
     for i in range(df.shape[0]):
         random_ints.append(rand.randint(0, len(df) - 1))
-    selected_species = []
     for j in random_ints:
         selected_species = species[j]
         audio_data, sample_rate = sf.read("/home/meri/Documents/GitHub/BirdCLEF_Glassmasters/src/birdclef-2023"

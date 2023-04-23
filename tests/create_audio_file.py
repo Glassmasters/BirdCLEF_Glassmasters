@@ -87,7 +87,7 @@ def create_multiple_mixed_audios(metadata, unique_classes, n, mix_length=600, se
 
 if __name__ == '__main__':
     # Define the dataset base path and the train set file directory
-    DATASET_BASE_FILE_PATH = r"D:\kaggle_competition\birdclef-2023\train_audio"
+    DATASET_BASE_FILE_PATH = r"../src/birdclef-2023/train_audio"
     metadata, num_classes = load_metadata(r"../data/local_subset_stratified.csv")
 
     unique_classes = sorted(metadata['primary_label'].unique())
