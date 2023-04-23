@@ -175,9 +175,6 @@ class PretrainedBirdClassifier(nn.Module):
         # Replace the last fully connected layer for bird species classification
         self.base_model.fc = nn.Linear(self.base_model.fc.in_features, num_classes)
 
-        # Define the number of features from the pre-trained model
-        num_features = self.base_model.fc.in_features
-
         # Add a custom classification layer
         self.base_model.fc = nn.Sequential(
             nn.Linear(self.base_model.fc.in_features, 2048),
@@ -227,7 +224,7 @@ class PretrainedEfficientNetBirdClassifier(nn.Module):
                 param.requires_grad = False
 
         # Replace the first convolutional layer to accept single-channel input (melspectrogram)
-        #self.base_model.conv_stem = nn.Conv2d(1, 32, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1), bias=False)
+        # self.base_model.conv_stem = nn.Conv2d(1, 32, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1), bias=False)
 
         # Replace the last fully connected layer for bird species classification
         num_features = self.base_model.classifier[1].in_features

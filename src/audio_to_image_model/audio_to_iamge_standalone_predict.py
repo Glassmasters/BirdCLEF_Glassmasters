@@ -54,7 +54,7 @@ def predict(model, audio_segments, device):
 #    return result_df
 
 
-def generate_csv(predictions, threshold, row_id_prefix, label_to_bird_map):
+def generate_csv(predictions, row_id_prefix, label_to_bird_map):
     result_rows = []
     for i, pred in enumerate(predictions):
         # print(f"Prediction {i}: {pred}")
@@ -68,7 +68,7 @@ def generate_csv(predictions, threshold, row_id_prefix, label_to_bird_map):
     return result_df
 
 
-def inference(audio_path, model, label_to_bird_map, threshold=0.5017, device='cpu'):
+def inference(audio_path, model, label_to_bird_map, device='cpu'):
     audio_segments = split_audio(audio_path)
     model.to(device)
     model.eval()
@@ -77,7 +77,7 @@ def inference(audio_path, model, label_to_bird_map, threshold=0.5017, device='cp
         predictions = predict(model, audio_segments, device)
 
     row_id_prefix = os.path.splitext(os.path.basename(audio_path))[0]
-    result_df = generate_csv(predictions, threshold, row_id_prefix, label_to_bird_map)
+    result_df = generate_csv(predictions, row_id_prefix, label_to_bird_map)
 
     return result_df
 
@@ -85,7 +85,7 @@ def inference(audio_path, model, label_to_bird_map, threshold=0.5017, device='cp
 if __name__ == '__main__':
     # Set parameters here
     #TEST_FOLDER_PATH = r"D:\kaggle_competition\birdclef-2023\test_soundscapes"
-    TEST_FOLDER_PATH = r"C:\Users\phili\Projects\pythonProjects\BirdCLEF_Glassmasters\tests\test_audio_files"
+    TEST_FOLDER_PATH = r"../../tests/test_audio_files"
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
     # Load your model and preprocessing function here
