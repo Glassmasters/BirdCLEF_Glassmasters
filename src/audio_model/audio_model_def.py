@@ -63,5 +63,8 @@ class Pretrained_Bird_classifier():
     def load_model_from_hub(self):
         pretrained_model_handle = "https://tfhub.dev/google/bird-vocalization-classifier/1"
         self.pretrained_model = hub.load(pretrained_model_handle)
-
-    
+        # HOW to use
+        # input: 5s a 32000 sample rate -> (x, 160000)
+        # logits, embeddings = model.infer_tf(fixed_tm[:1])
+        # logits -> shape=(1, 10932)
+        # embeddings -> shape=(1, 1280)
