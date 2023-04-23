@@ -7,19 +7,15 @@ import warnings
 from torch.utils.data import random_split
 from torch.utils.data import DataLoader
 
-from audio_to_image_model_def import CustomCNN
+from audio_to_image_model_def import CustomCNN, PretrainedBirdClassifier, ImprovedCustomCNN, PretrainedEfficientNetBirdClassifier
 from audio_to_image_dataset_def import BirdDataset
 from src.preprocess.audio_to_image.data_augmentation import AugmentMelSpectrogram
+from src.plotting.plot_training_curve import plot_loss_and_accuracy
+from src.audio_to_image_model.training_config_pretrained import dataset_config
 
 warnings.filterwarnings("ignore")
 
 torch.manual_seed(42)
-
-
-def load_metadata(file_path):
-    df = pd.read_csv(file_path)
-    num_classes = df['primary_label'].nunique()
-    return df, num_classes
 
 
 def init_weights(m):
@@ -31,8 +27,10 @@ def init_weights(m):
 def train(dataloader, model, loss_fn, optimizer, epoch, total_epochs):
     size = len(dataloader.dataset)
     model.train()
+    correct = 0
+    predictions = 0
 
-    progress_bar = tqdm(train_loader)
+    progress_bar = tqdm(dataloader)
 
     for batch_idx, (data, target) in enumerate(progress_bar):
         data, target = data.to(device), target.to(device)
@@ -42,16 +40,29 @@ def train(dataloader, model, loss_fn, optimizer, epoch, total_epochs):
         loss.backward()
         optimizer.step()
 
-        loss, current = loss.item(), batch_idx * len(data)
+        # Get the predicted class labels
+        pred = output.argmax(dim=1, keepdim=True)
+        # Convert the one-hot encoded target back to class labels
+        target_labels = target.argmax(dim=1, keepdim=True)
+
+        correct += pred.eq(target_labels.view_as(pred)).sum().item()
+        predictions += data.shape[0]
+
+        loss = loss.item()
+        accuracy = correct / predictions
+
         progress_bar.set_description(f"Epoch [{epoch}/{total_epochs}]")
-        progress_bar.set_postfix(loss= loss, accuracy= (100 * current / size))
+        progress_bar.set_postfix(loss=loss, accuracy=accuracy)
+
+    return loss, accuracy
 
 
 def _test(dataloader, model, loss_fn):
+    model.eval()
     size = len(dataloader.dataset)
     num_batches = len(dataloader)
     test_loss, correct = 0, 0
-    model.eval()
+    # model.eval()
     total_loss = 0
 
     progress_bar = tqdm(val_loader)
@@ -60,25 +71,34 @@ def _test(dataloader, model, loss_fn):
         for batch_idx, (data, target) in enumerate(progress_bar):
             data, target = data.to(device), target.to(device)
             output = model(data)
-            loss = loss_fn(output, target)
+            loss = loss_fn(output, target.squeeze(1))
             total_loss += loss.item()
 
-        test_loss /= num_batches
-        correct /= size
-        progress_bar.set_description(f"Test Error: \n Accuracy: {(100 * correct):>0.1f}%, Avg loss: {test_loss:>8f} \n")
+            test_loss /= num_batches
+            # Get the predicted class labels
+            pred = output.argmax(dim=1, keepdim=True)
+            # Convert the one-hot encoded target back to class labels
+            target_labels = target.argmax(dim=1, keepdim=True)
+
+            correct += pred.eq(target_labels.view_as(pred)).sum().item()
+
+        print(f"\nTest Loss:{total_loss / size:>8f}  Accuracy: {(correct / size):>0.1f}%\n")
+
+    return total_loss / size, correct / size
+
+
+def number_trainable_params(model):
+    total_params = sum(p.numel() for p in model.parameters())
+    trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    print(f"Total params: {total_params:,}")
+    print(f"Trainable params: {trainable_params:,}")
+
 
 if __name__ == '__main__':
 
-    # Define the dataset base path and the train set file directory
-    DATASET_BASE_FILE_PATH = r"D:\kaggle_competition\birdclef-2023"
-    TRAIN_SET_FILE_DIR = r"\train_audio"
-
-    # Load the metadata file
-    metadata_df, num_classes = load_metadata(r"../../data/local_subset.csv")
-
     # Create a custom dataset object
-    augmentations = AugmentMelSpectrogram()
-    bird_dataset = BirdDataset(metadata_df, DATASET_BASE_FILE_PATH + TRAIN_SET_FILE_DIR, fixed_length=300, num_classes=num_classes, transform=augmentations or None)
+    # augmentations = AugmentMelSpectrogram()
+    bird_dataset = BirdDataset(**dataset_config)
 
     # Split the dataset into train and validation sets
     train_ratio = 0.8
@@ -97,29 +117,49 @@ if __name__ == '__main__':
     print("Running on device: {}".format(device))
 
     # Initialize the model
-    model = CustomCNN(num_classes).to(device)
+    model = PretrainedEfficientNetBirdClassifier(dataset_config["num_classes"]).to(device)
     print(model)
+    number_trainable_params(model)
 
     # Initialize the model weights
     model.apply(init_weights)
 
     # Define the loss function and the optimizer
-    criterion = nn.BCELoss()
+    criterion = nn.CrossEntropyLoss()
+
     optimizer = optim.Adam(model.parameters(), lr=0.001)
 
     # Train the model
-    num_epochs = 10
+    num_epochs = 20
+    train_losses = []
+    train_accuracies = []
+    val_losses = []
+    val_accuracies = []
     for epoch in range(num_epochs):
         # Train
-        train(train_loader, model, criterion, optimizer, epoch +1, num_epochs)
-        # Evaluate on the validation set
-        _test(val_loader, model, criterion)
+        train_loss, train_accuracy = train(train_loader, model, criterion, optimizer, epoch + 1, num_epochs)
+        train_losses.append(train_loss)
+        train_accuracies.append(train_accuracy)
 
-    # TODO: Save model not only for inference but also for training
-    torch.save(model.state_dict(), "../../models/model.pth")
+        # Evaluate on the validation set
+        val_loss, val_accuracy = _test(val_loader, model, criterion)
+        val_losses.append(val_loss)
+        val_accuracies.append(val_accuracy)
+
+    # Save the model
+    torch.save(model.state_dict(), "../../models/audio_to_image_pretrained_resnet.pth")
     print("Saved PyTorch Model State to model.pth")
+
+    # Plot the training curve
+    plot_loss_and_accuracy(train_losses, train_accuracies, val_losses, val_accuracies)
 
     # TODO: Different optimizer and loss function
     # TODO: Different augmentation techniques
     # TODO: Other Model? Pretrained model?
     # TODO: DIfferent method to handle inblaslance audio length
+
+# -> kein threshold
+# --> Stack 5 second blocks
+# --> early stopping
+# --> accuracy reset
+# --> Audio feature extraction
