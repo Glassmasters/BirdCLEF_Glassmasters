@@ -13,5 +13,4 @@ matplotlib~=3.6.3
 
 # Progress bar
 tqdm~=4.64.1
-soundfile~=0.12.1
 pydub~=0.25.1
