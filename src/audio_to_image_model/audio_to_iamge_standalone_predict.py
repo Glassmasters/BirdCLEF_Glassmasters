@@ -4,9 +4,9 @@ import numpy as np
 import pandas as pd
 import librosa
 import torch
-from src.audio_to_image_model.model_audio_to_image import load_metadata
+from src.audio_to_image_model.training_config_pretrained import load_metadata
 from src.preprocess.audio_to_image.preprocess import preprocess_audio
-from src.audio_to_image_model.audio_to_image_model_def import *
+from src.audio_to_image_model.audio_to_image_model_def import PretrainedBirdClassifier, PretrainedEfficientNetBirdClassifier
 
 
 def split_audio(audio_path, segment_length=5, sample_rate=32000, n_fft=2048):

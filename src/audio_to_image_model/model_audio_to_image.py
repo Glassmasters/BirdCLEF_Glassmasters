@@ -11,16 +11,11 @@ from audio_to_image_model_def import CustomCNN, PretrainedBirdClassifier, Improv
 from audio_to_image_dataset_def import BirdDataset
 from src.preprocess.audio_to_image.data_augmentation import AugmentMelSpectrogram
 from src.plotting.plot_training_curve import plot_loss_and_accuracy
+from src.audio_to_image_model.training_config_pretrained import dataset_config
 
 warnings.filterwarnings("ignore")
 
 torch.manual_seed(42)
-
-
-def load_metadata(file_path):
-    df = pd.read_csv(file_path)
-    num_classes = df['primary_label'].nunique()
-    return df, num_classes
 
 
 def init_weights(m):
@@ -54,11 +49,10 @@ def train(dataloader, model, loss_fn, optimizer, epoch, total_epochs):
         predictions += data.shape[0]
 
         loss = loss.item()
-        accuracy = 100 * correct / predictions
+        accuracy = correct / predictions
 
         progress_bar.set_description(f"Epoch [{epoch}/{total_epochs}]")
         progress_bar.set_postfix(loss=loss, accuracy=accuracy)
-
 
     return loss, accuracy
 
@@ -88,9 +82,9 @@ def _test(dataloader, model, loss_fn):
 
             correct += pred.eq(target_labels.view_as(pred)).sum().item()
 
-        print(f"\nTest Loss:{total_loss / size:>8f}  Accuracy: {(100 * correct / size):>0.1f}%\n")
+        print(f"\nTest Loss:{total_loss / size:>8f}  Accuracy: {(correct / size):>0.1f}%\n")
 
-    return total_loss / size, 100 * correct / size
+    return total_loss / size, correct / size
 
 
 def number_trainable_params(model):
@@ -102,17 +96,9 @@ def number_trainable_params(model):
 
 if __name__ == '__main__':
 
-    # Define the dataset base path and the train set file directory
-    DATASET_BASE_FILE_PATH = r"D:\kaggle_competition\birdclef-2023"
-    TRAIN_SET_FILE_DIR = r"\train_audio"
-
-    # Load the metadata file
-    # metadata_df, num_classes = load_metadata(r"../../data/local_subset.csv")
-    metadata_df, num_classes = load_metadata(r"../../data/local_subset_stratified.csv")
-
     # Create a custom dataset object
-    augmentations = AugmentMelSpectrogram()
-    bird_dataset = BirdDataset(metadata_df, DATASET_BASE_FILE_PATH + TRAIN_SET_FILE_DIR, num_classes=num_classes, transform=augmentations, efficientnet=True)
+    # augmentations = AugmentMelSpectrogram()
+    bird_dataset = BirdDataset(**dataset_config)
 
     # Split the dataset into train and validation sets
     train_ratio = 0.8
@@ -131,7 +117,7 @@ if __name__ == '__main__':
     print("Running on device: {}".format(device))
 
     # Initialize the model
-    model = PretrainedEfficientNetBirdClassifier(num_classes).to(device)
+    model = PretrainedEfficientNetBirdClassifier(dataset_config["num_classes"]).to(device)
     print(model)
     number_trainable_params(model)
 
@@ -139,8 +125,6 @@ if __name__ == '__main__':
     model.apply(init_weights)
 
     # Define the loss function and the optimizer
-    # criterion = nn.BCELoss()
-    # FIXME: New loss does not need Sigmoid/softmax?
     criterion = nn.CrossEntropyLoss()
 
     optimizer = optim.Adam(model.parameters(), lr=0.001)
@@ -163,7 +147,7 @@ if __name__ == '__main__':
         val_accuracies.append(val_accuracy)
 
     # Save the model
-    torch.save(model.state_dict(), "../../models/model2.pth")
+    torch.save(model.state_dict(), "../../models/audio_to_image_pretrained_resnet.pth")
     print("Saved PyTorch Model State to model.pth")
 
     # Plot the training curve
