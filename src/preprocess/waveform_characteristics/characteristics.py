@@ -59,7 +59,7 @@ def audio_waveform_percentile(audio_data: torch.Tensor, percentile: int) -> floa
     Returns: percentile_value: float, the percentile value of the audio waveform.
 
     """
-    percentile_value = torch.quantile(audio_data, percentile / 100)
+    percentile_value = torch.quantile(audio_data, percentile / 100.0)
     return percentile_value.item()
 
 
