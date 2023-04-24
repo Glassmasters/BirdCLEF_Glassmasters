@@ -7,7 +7,7 @@ def audio_waveform_maximum(audio_data: torch.Tensor) -> float:
     Args:
         audio_data: torch.Tensor, shape (N,), where N is the number of samples in the audio waveform.
 
-    Returns: max_value: float, the maximum value of the audio waveform.
+    Returns: max_value: float, the maximum value of the audio waveform. Maximum absolute value of the audio data, the value farthest away from zero
 
     """
     max_value = torch.max(torch.abs(audio_data))
@@ -19,7 +19,7 @@ def audio_waveform_minimum(audio_data: torch.Tensor) -> float:
     Args:
         audio_data: torch.Tensor, shape (N,), where N is the number of samples in the audio waveform.
 
-    Returns: min_value: float, the minimum value of the audio waveform.
+    Returns: min_value: float, the minimum value of the audio waveform. Minimum absolute value of the audio data, the value closest to zero
 
     """
     min_value = torch.min(torch.abs(audio_data))
