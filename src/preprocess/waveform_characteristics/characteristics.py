@@ -71,7 +71,8 @@ def audio_waveform_to_db(audio_data: torch.Tensor) -> torch.Tensor:
     Returns: db_value: torch.Tensor, the audio waveform in decibels.
 
     """
-    db_value = 20 * torch.log10(torch.abs(audio_data))
+    eps = 1e-12 #constant to avoid zero in log
+    db_value = 20 * torch.log10(torch.abs(audio_data) + eps)
     return db_value
 
 
