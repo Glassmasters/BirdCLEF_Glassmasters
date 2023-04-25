@@ -2,6 +2,9 @@ from torch.utils.data import Dataset
 import torchaudio
 import torch
 
+import tensorflow as tf
+import tensorflow_hub as hub
+
 torch.manual_seed(42)
 
 
@@ -10,18 +13,25 @@ class BirdDatasetAudioOnly(Dataset):
         A custom dataset class for loading and processing bird sound data.
     """
 
-    def __init__(self, metadata_df, train_set_file_dir, num_classes=264):
+    def __init__(self, metadata_df, train_set_file_dir, num_classes: int=264, use_pretrained_feature_extractor: bool=False):
         """
         Initialize the dataset
         Args:
             metadata_df (pd.DataFrame): A dataframe containing metadata for the audio files.
             train_set_file_dir (str): The base directory for the training set files.
             num_classes (int, optional): The number of bird species. Defaults to 264.
+            use_pretrained_feature_extractor (bool, optional): Whether to use the pretrained bird classifier from tensorflow
+            hub as a feature extractor.
         """
         self.metadata_df = metadata_df
         self.num_classes = num_classes
         self.base_file_path = train_set_file_dir
+        self.use_pretrained_feature_extractor = use_pretrained_feature_extractor
         self.label_to_index = {label: index for index, label in enumerate(sorted(self.metadata_df['primary_label'].unique()))}
+
+        if self.use_pretrained_feature_extractor:
+            pretrained_model_handle = "https://tfhub.dev/google/bird-vocalization-classifier/1"
+            self.pretrained_model = hub.load(pretrained_model_handle)
 
 
     def __len__(self):
@@ -47,9 +57,15 @@ class BirdDatasetAudioOnly(Dataset):
         full_file_path = self.base_file_path + "\\" + file_path
         audio_waveform = self.load_audio(full_file_path)
 
-
         one_hot_label = self.label_to_onehot(primary_label, self.num_classes)
-        return audio_waveform, one_hot_label
+
+        if self.use_pretrained_feature_extractor:
+            audio_waveform_feature_extracted = self.pretrained_model.infer_tf(
+                audio_waveform
+            )
+            return audio_waveform_feature_extracted[0], one_hot_label
+        else:
+            return audio_waveform, one_hot_label
     
 
     def label_to_onehot(self, label, num_classes):

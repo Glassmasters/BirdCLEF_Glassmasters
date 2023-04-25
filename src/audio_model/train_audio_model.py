@@ -77,13 +77,22 @@ if __name__ == '__main__':
     # Define the dataset base path and the train set file directory
     DATASET_BASE_FILE_PATH = r"D:\Datasets\birdclef-2023"
     TRAIN_SET_FILE_DIR = r"\train_audio_balanced"
-    MODEL_WEIGHTS = f"../../models/audio_1d_CNN_model.pth"
+
+    use_pretrained_model = True
+    if use_pretrained_model:
+        model_name = "audio_1d_CNN_model_on_feature_extractor.pth"
+        # MODEL_WEIGHTS = f"../../models/{model_name}"
+    else:
+        model_name = "audio_1d_CNN_model.pth"
+        MODEL_WEIGHTS = f"../../models/{model_name}"
 
     # Load the metadata file
     metadata_df, num_classes = load_metadata(DATASET_BASE_FILE_PATH + r"\output_classes_distribution.csv")
 
     # Create a custom dataset object
-    bird_dataset = BirdDatasetAudioOnly(metadata_df, DATASET_BASE_FILE_PATH + TRAIN_SET_FILE_DIR, num_classes=num_classes)
+    bird_dataset = BirdDatasetAudioOnly(metadata_df, DATASET_BASE_FILE_PATH + TRAIN_SET_FILE_DIR, 
+                                        num_classes=num_classes, 
+                                        use_pretrained_feature_extractor=use_pretrained_model)
 
     # Split the dataset into train and validation sets
     train_ratio = 0.8
@@ -103,8 +112,8 @@ if __name__ == '__main__':
 
     # Initialize the model
     model = Custom1dCNN(num_classes).to(device)
-    if MODEL_WEIGHTS:
-        model.load_state_dict(torch.load(MODEL_WEIGHTS))
+    # if MODEL_WEIGHTS:
+        # model.load_state_dict(torch.load(MODEL_WEIGHTS))
     print(model)
 
     # Initialize the model weights
@@ -122,7 +131,6 @@ if __name__ == '__main__':
         # Evaluate on the validation set
         _test(val_loader, model, criterion)
 
-    model_name = "audio_1d_CNN_model.pth"
     torch.save(model.state_dict(), f"../../models/{model_name}")
     print(f"Saved PyTorch Model State to {model_name}")
     
