@@ -60,10 +60,12 @@ class BirdDatasetAudioOnly(Dataset):
         one_hot_label = self.label_to_onehot(primary_label, self.num_classes)
 
         if self.use_pretrained_feature_extractor:
-            audio_waveform_feature_extracted = self.pretrained_model.infer_tf(
+            _, audio_waveform_feature_extracted_tf = self.pretrained_model.infer_tf(
                 audio_waveform
             )
-            return audio_waveform_feature_extracted[0], one_hot_label
+            audio_waveform_feature_extracted_np = audio_waveform_feature_extracted_tf.numpy()
+            audio_waveform_feature_extracted = torch.from_numpy(audio_waveform_feature_extracted_np)
+            return audio_waveform_feature_extracted, one_hot_label
         else:
             return audio_waveform, one_hot_label
     

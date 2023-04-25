@@ -7,7 +7,7 @@ import warnings
 from torch.utils.data import random_split
 from torch.utils.data import DataLoader
 
-from audio_model_def import Custom1dCNN
+from audio_model_def import Custom1dCNN, Custom1dCNNOnPretrainedModel
 from audio_dataset_def import BirdDatasetAudioOnly
 
 warnings.filterwarnings("ignore")
@@ -111,10 +111,14 @@ if __name__ == '__main__':
     print("Running on device: {}".format(device))
 
     # Initialize the model
-    model = Custom1dCNN(num_classes).to(device)
-    # if MODEL_WEIGHTS:
-        # model.load_state_dict(torch.load(MODEL_WEIGHTS))
+    if use_pretrained_model:
+        model = Custom1dCNNOnPretrainedModel(num_classes).to(device)
+    else:
+        model = Custom1dCNN(num_classes).to(device)
+        if MODEL_WEIGHTS:
+            model.load_state_dict(torch.load(MODEL_WEIGHTS))
     print(model)
+    
 
     # Initialize the model weights
     # model.apply(init_weights)
