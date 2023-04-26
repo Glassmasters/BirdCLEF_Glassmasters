@@ -91,7 +91,7 @@ def audio_waveform_fft(audio_data: torch.Tensor) -> torch.Tensor:
 
 def audio_waveform_envelope(audio_data: torch.Tensor) -> torch.Tensor:
     """
-    Calculates the envelope of an audio waveform using PyTorch.
+    Calculates the envelope of an audio waveform using the Hilbert transform.
 
     Args:
         audio_data: torch.Tensor, shape (N,), where N is the number of samples in the audio waveform.
