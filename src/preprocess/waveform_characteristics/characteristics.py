@@ -1,5 +1,6 @@
+import numpy as np
 import torch
-from torch.nn.functional import relu
+from scipy.signal import hilbert
 
 
 def audio_waveform_maximum(audio_data: torch.Tensor) -> float:
@@ -87,19 +88,22 @@ def audio_waveform_fft(audio_data: torch.Tensor) -> torch.Tensor:
     return fft_value
 
 
-def audio_waveform_envelope(audio_data: torch.Tensor, window_size: int = 1000) -> torch.Tensor:
+def audio_waveform_envelope(audio_data: torch.Tensor) -> torch.Tensor:
     """
     Calculates the envelope of an audio waveform using PyTorch.
 
     Args:
         audio_data: torch.Tensor, shape (N,), where N is the number of samples in the audio waveform.
-        window_size: int, the size of the sliding window used to compute the moving average.
 
     Returns:
         envelope_value: torch.Tensor, the audio waveform envelope.
     """
-    rectified_signal = relu(audio_data)
 
-    envelope = rectified_signal.unfold(0, window_size, window_size).mean(dim=-1)
+    # Transform the audio data into a numpy array
+    audio_data = audio_data.numpy()
+    analytic_signal = hilbert(audio_data)
 
-    return envelope
+    # Calculate the amplitude envelope and transform it into a torch.Tensor
+    amplitude_envelope = torch.Tensor(np.abs(analytic_signal))
+
+    return amplitude_envelope
