@@ -7,7 +7,7 @@ import warnings
 from torch.utils.data import random_split
 from torch.utils.data import DataLoader
 
-from audio_model_def import Custom1dCNN, Custom1dCNNOnPretrainedModel
+from audio_model_def import Custom1dCNN, Custom1dCNNSmall, Custom1dCNNOnPretrainedModel
 from audio_dataset_def import BirdDatasetAudioOnly
 
 warnings.filterwarnings("ignore")
@@ -25,6 +25,13 @@ def init_weights(m):
     if type(m) == nn.Linear:
         nn.init.xavier_uniform_(m.weight)
         m.bias.data.fill_(0.01)
+
+
+def number_trainable_params(model):
+    total_params = sum(p.numel() for p in model.parameters())
+    trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    print(f"Total params: {total_params:,}")
+    print(f"Trainable params: {trainable_params:,}")
 
 
 def train(dataloader, model, loss_fn, optimizer, epoch, total_epochs):
@@ -78,10 +85,13 @@ if __name__ == '__main__':
     DATASET_BASE_FILE_PATH = r"D:\Datasets\birdclef-2023"
     TRAIN_SET_FILE_DIR = r"\train_audio_balanced"
 
-    use_pretrained_model = True
+    use_pretrained_model = False
+    use_small_1d_cnn = True
     if use_pretrained_model:
         model_name = "audio_1d_CNN_model_on_feature_extractor.pth"
         # MODEL_WEIGHTS = f"../../models/{model_name}"
+    elif use_small_1d_cnn:
+        model_name = "audio_1d_CNN_model_small.pth"
     else:
         model_name = "audio_1d_CNN_model.pth"
         MODEL_WEIGHTS = f"../../models/{model_name}"
@@ -113,12 +123,13 @@ if __name__ == '__main__':
     # Initialize the model
     if use_pretrained_model:
         model = Custom1dCNNOnPretrainedModel(num_classes).to(device)
+    elif use_small_1d_cnn:
+        model = Custom1dCNNSmall(num_classes).to(device)
     else:
         model = Custom1dCNN(num_classes).to(device)
         if MODEL_WEIGHTS:
             model.load_state_dict(torch.load(MODEL_WEIGHTS))
-    print(model)
-    
+    number_trainable_params(model)
 
     # Initialize the model weights
     # model.apply(init_weights)
@@ -128,7 +139,7 @@ if __name__ == '__main__':
     optimizer = optim.Adam(model.parameters(), lr=0.001)
 
     # Train the model
-    num_epochs = 1
+    num_epochs = 5
     for epoch in range(num_epochs):
         # Train
         train(train_loader, model, criterion, optimizer, epoch +1, num_epochs)
